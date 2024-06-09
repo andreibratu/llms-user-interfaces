@@ -1,0 +1,12 @@
+.DS_Store
+data/finetuning
+**/__pycache__
+reports/*
+.env
+.db
+.venv/*
+.diagrams/*
+debug/*
+.cachedir
+.pytest_cache
+.vscode
