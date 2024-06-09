@@ -16,7 +16,7 @@
                         "json_object": "$CAR_STATE$",
                         "return_type": "string"
                     },
-                    "memory": "$CAR_ADDRESS$",
+                    "memory": "CAR_ADDRESS",
                     "reason": "This tool uses LLM to extract only the city part of address"
                 },
                 {
@@ -54,14 +54,23 @@
                     "reason": "Need to get car state for location"
                 },
                 {
+                    "tool_name": "set_temperature",
+                    "args": {
+                        "temperature": 25,
+                        "seatzone": "ALL"
+                    },
+                    "memory": null,
+                    "reason": "Handle other objective, set temperature"
+                },
+                {
                     "tool_name": "llm_parse_json",
                     "args": {
-                        "query": "Get current city from current car state",
+                        "query": "Get current city from current car address",
                         "json_object": "$CAR_STATE$",
                         "return_type": "string"
                     },
-                    "memory": "$CAR_ADDRESS$",
-                    "reason": "This tool uses LLM to extract data"
+                    "memory": "CAR_ADDRESS",
+                    "reason": "This tool uses LLM to extract car address"
                 },
                 {
                     "tool_name": "search_internet",
@@ -72,25 +81,9 @@
                     "reason": "Need external info for news"
                 },
                 {
-                    "tool_name": "set_temperature",
-                    "args": {
-                        "temperature": 25,
-                        "seatzone": "ALL"
-                    },
-                    "memory": null,
-                    "reason": "Handle other objective, set temperature"
-                },
-                {
-                    "tool_name": "search_internet",
-                    "args": {
-                        "query": "News for w"
-                    },
-                    "memory": "NEWS_RESULT"
-                },
-                {
                     "tool_name": "speak_user",
                     "args": {
-                        "query": "Create a news bulleting for user given data",
+                        "query": "Summarize news for user from data",
                         "data": "$NEWS_RESULT$"
                     },
                     "memory": null,
@@ -98,6 +91,15 @@
                 }
             ],
             [
+                {
+                    "tool_name": "set_temperature",
+                    "args": {
+                        "temperature": 25,
+                        "seatzone": "ALL"
+                    },
+                    "memory": null,
+                    "reason": "Change temperature in car per user request"
+                },
                 {
                     "tool_name": "get_car_state",
                     "args": null,
@@ -123,18 +125,9 @@
                     "reason": "Need external info for news"
                 },
                 {
-                    "tool_name": "set_temperature",
-                    "args": {
-                        "temperature": 25,
-                        "seatzone": "ALL"
-                    },
-                    "memory": null,
-                    "reason": "Change temperature in car per user request"
-                },
-                {
                     "tool_name": "speak_user",
                     "args": {
-                        "query": "Create a news bulleting for user given data",
+                        "query": "Summarize news for user from data",
                         "data": "$NEWS_RESULT$"
                     },
                     "memory": null,
@@ -184,6 +177,12 @@
         "instances": [
             [
                 {
+                    "tool_name": "get_car_state",
+                    "args": null,
+                    "memory": "CAR_STATE",
+                    "reason": "Need to get car state for home location"
+                },
+                {
                     "tool_name": "llm_parse_json",
                     "args": {
                         "query": "Extract home address string from car state json object. ",
@@ -207,7 +206,8 @@
                     "tool_name": "llm_parse_json",
                     "args": {
                         "query": "Extract ETA from json object",
-                        "json_object": "$NAVIGATION_OUTPUT$"
+                        "json_object": "$NAVIGATION_OUTPUT$",
+                        "return_type": "string"
                     },
                     "memory": "ETA",
                     "reason": "Get ETA from output of set_navigation"
@@ -369,7 +369,7 @@
                         "return_type": "object"
                     },
                     "memory": "RESTAURANT_RESULT",
-                    "reason": "Select a single object out of list that matches user best"
+                    "reason": "Select a single object out of list that is closest"
                 },
                 {
                     "tool_name": "set_temperature",
@@ -418,7 +418,7 @@
                         "return_type": "object"
                     },
                     "memory": "RESTAURANT_RESULT",
-                    "reason": "Select a single object out of list that matches user best"
+                    "reason": "Select a single object out of list that is closest"
                 },
                 {
                     "tool_name": "speak_user",
@@ -457,7 +457,7 @@
                 {
                     "tool_name": "llm_parse_json",
                     "args": {
-                        "query": "Find addres of closest EV charging station",
+                        "query": "Find address of closest EV charging station. It should be under a formattedAddress or address property in the JSON object.",
                         "json_object": "$EV_CHARGE_STATIONS$",
                         "return_type": "string"
                     },
@@ -497,7 +497,7 @@
                 {
                     "tool_name": "llm_parse_json",
                     "args": {
-                        "query": "Find addres of closest EV charging station",
+                        "query": "Find address of closest EV charging station. It should be under a formattedAddress or address property in the JSON object.",
                         "json_object": "$EV_CHARGE_STATIONS$",
                         "return_type": "string"
                     },
@@ -529,7 +529,7 @@
                 {
                     "tool_name": "llm_parse_json",
                     "args": {
-                        "query": "Find addres of closest EV charging station",
+                        "query": "Find address of closest EV charging station. It should be under a formattedAddress or address property in the JSON object.",
                         "json_object": "$EV_CHARGE_STATIONS$",
                         "return_type": "string"
                     },
@@ -569,7 +569,7 @@
                 {
                     "tool_name": "llm_parse_json",
                     "args": {
-                        "query": "Find addres of closest EV charging station",
+                        "query": "Find address of closest EV charging station. It should be under a formattedAddress or address property in the JSON object.",
                         "json_object": "$EV_CHARGE_STATIONS$",
                         "return_type": "string"
                     },
@@ -622,7 +622,7 @@
                     "args": {
                         "query": "attractions",
                         "location": null,
-                        "search_range": "$CAR_RANGE$"
+                        "search_range": 50
                     },
                     "memory": "POI",
                     "reason": "Find points of interest, tourist attractions in car range"
@@ -668,7 +668,7 @@
                     "args": {
                         "query": "points of interest",
                         "location": null,
-                        "search_range": "$CAR_RANGE$"
+                        "search_range": 50
                     },
                     "memory": "POI",
                     "reason": "Find tourist places in driving range"
@@ -788,7 +788,7 @@
                             "playlist"
                         ]
                     },
-                    "memory": "CHILD_AUDIO_RESULTS",
+                    "memory": "CHILD_AUDIO",
                     "reason": "Find a list of children audiobooks"
                 },
                 {
@@ -807,7 +807,7 @@
                         "data": "$BEST_RESTAURANT$"
                     },
                     "memory": null,
-                    "reason": "Select a single media object to be played"
+                    "reason": "Tell user what restaurant has been decided for them"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -815,7 +815,7 @@
                         "media_object": "$BEST_CHILD_AUDIO$"
                     },
                     "memory": null,
-                    "reason": "Play the children audiobook"
+                    "reason": "Enqueue the audiobook for play"
                 }
             ],
             [
@@ -828,17 +828,18 @@
                             "playlist"
                         ]
                     },
-                    "memory": "CHILD_AUDIO_RESULTS"
+                    "memory": "CHILD_AUDIO",
+                    "reason": "Find a list of children audiobooks"
                 },
                 {
                     "tool_name": "places_tool",
                     "args": {
-                        "query": "child friendly restaurants",
+                        "query": "restaurants",
                         "location": null,
                         "search_range": 15
                     },
                     "memory": "RESTAURANTS",
-                    "reason": "Search for child friendly restaurants"
+                    "reason": "Find restaurants 15 km away from car max"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -848,7 +849,7 @@
                         "return_type": "object"
                     },
                     "memory": "BEST_RESTAURANT",
-                    "reason": "Parse one restaurant out of the list"
+                    "reason": "Single out a single restaurant for the driver"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -858,7 +859,7 @@
                         "return_type": "object"
                     },
                     "memory": "BEST_CHILD_AUDIO",
-                    "reason": "Select a children audibook from JSON list"
+                    "reason": "Select a single media object to be played"
                 },
                 {
                     "tool_name": "speak_user",
@@ -867,7 +868,7 @@
                         "data": "$BEST_RESTAURANT$"
                     },
                     "memory": null,
-                    "reason": "Tell driver about the restaurant selected"
+                    "reason": "Tell user what restaurant has been decided for them"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -875,7 +876,7 @@
                         "media_object": "$BEST_CHILD_AUDIO$"
                     },
                     "memory": null,
-                    "reason": "Start playing the children audiobook"
+                    "reason": "Enqueue the audiobook for play"
                 }
             ]
         ]
@@ -890,7 +891,7 @@
                         "light_color": "BLUE"
                     },
                     "memory": null,
-                    "reason": "Change the light inside the cockpit"
+                    "reason": "Set ambient light to blue"
                 },
                 {
                     "tool_name": "media_search",
@@ -903,7 +904,7 @@
                         ]
                     },
                     "memory": "MEDIA_RESULT",
-                    "reason": "Search for a compilation of calming music or nature sounds, rain, etc."
+                    "reason": "Search for calming music"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -913,7 +914,7 @@
                         "return_type": "object"
                     },
                     "memory": "PARSE_CALM",
-                    "reason": "Return one object from the list returned by media search"
+                    "reason": "Select a single media object to be played"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -921,7 +922,7 @@
                         "media_object": "$PARSE_CALM$"
                     },
                     "memory": null,
-                    "reason": "Start playing the media object selected earlier"
+                    "reason": "Enqueue the calming music"
                 }
             ],
             [
@@ -936,16 +937,17 @@
                         ]
                     },
                     "memory": "MEDIA_RESULT",
-                    "reason": "Search for a compilation of calming music or nature sounds, rain, etc."
+                    "reason": "Search for calming music"
                 },
                 {
                     "tool_name": "llm_parse_json",
                     "args": {
                         "query": "Pick the media JSON object from this list that best fits calming music. Return a single one",
+                        "json_object": "MEDIA_RESULT",
                         "return_type": "object"
                     },
                     "memory": "PARSE_CALM",
-                    "reason": "Return one object from the list returned by media search"
+                    "reason": "Select a single media object to be played"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -953,7 +955,7 @@
                         "media_object": "$PARSE_CALM$"
                     },
                     "memory": null,
-                    "reason": "Start playing the media object selected earlier"
+                    "reason": "Enqueue the calming music"
                 },
                 {
                     "tool_name": "set_ambient_light",
@@ -961,13 +963,13 @@
                         "light_color": "BLUE"
                     },
                     "memory": null,
-                    "reason": "Change the light inside the cockpit"
+                    "reason": "Set ambient light to blue"
                 }
             ]
         ]
     },
     {
-        "instruction": "Play calming music and change light to green. Also, locate a nearby spa.",
+        "instruction": "Play calming music and dim the interior lights. Also, locate a nearby spa.",
         "instances": [
             [
                 {
@@ -976,7 +978,7 @@
                         "light_color": "GREEN"
                     },
                     "memory": null,
-                    "reason": "Change light to green"
+                    "reason": "Set ambient light to green"
                 },
                 {
                     "tool_name": "media_search",
@@ -989,16 +991,17 @@
                         ]
                     },
                     "memory": "MEDIA_RESULT",
-                    "reason": "Search for calming music/ nature playlist, sounds rain etc."
+                    "reason": "Search for calming music"
                 },
                 {
                     "tool_name": "llm_parse_json",
                     "args": {
                         "query": "Pick the media JSON object from this list that best fits calming music. Return a single one",
+                        "json_object": "MEDIA_RESULT",
                         "return_type": "object"
                     },
                     "memory": "PARSE_CALM",
-                    "reason": "Select one object from JSON list"
+                    "reason": "Select a single media object to be played"
                 },
                 {
                     "tool_name": "places_tool",
@@ -1008,7 +1011,7 @@
                         "search_range": 15
                     },
                     "memory": "SPA_RESULTS",
-                    "reason": "Search for a spa close to driver in a 15 km range from car"
+                    "reason": "Find a spa nearby in 15 km range"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -1016,17 +1019,17 @@
                         "media_object": "$PARSE_CALM$"
                     },
                     "memory": null,
-                    "reason": "Start playing the playlist or song found earlier"
+                    "reason": "Enqueue the calming music"
                 },
                 {
                     "tool_name": "llm_parse_json",
                     "args": {
                         "query": "Get the closest spa JSON object from provided JSON list",
-                        "json_object": "$PARSE_CALM$",
+                        "json_object": "$SPA_RESULTS$",
                         "return_type": "object"
                     },
                     "memory": "CLOSEST_SPA",
-                    "reason": "Select closest spa returned by places tool"
+                    "reason": "Select a single spa object"
                 },
                 {
                     "tool_name": "speak_user",
@@ -1035,7 +1038,7 @@
                         "data": "$CLOSEST_SPA$"
                     },
                     "memory": null,
-                    "reason": "Tell the user about the nearby spa"
+                    "reason": "Inform user about the spa"
                 }
             ],
             [
@@ -1045,7 +1048,7 @@
                         "light_color": "GREEN"
                     },
                     "memory": null,
-                    "reason": "Change light to green"
+                    "reason": "Set ambient light to green"
                 },
                 {
                     "tool_name": "media_search",
@@ -1058,16 +1061,17 @@
                         ]
                     },
                     "memory": "MEDIA_RESULT",
-                    "reason": "Search for calming music/ nature playlist, sounds rain etc."
+                    "reason": "Search for calming music"
                 },
                 {
                     "tool_name": "llm_parse_json",
                     "args": {
                         "query": "Pick the media JSON object from this list that best fits calming music. Return a single one",
+                        "json_object": "MEDIA_RESULT",
                         "return_type": "object"
                     },
                     "memory": "PARSE_CALM",
-                    "reason": "Start playing the playlist or song found earlier"
+                    "reason": "Select a single media object to be played"
                 },
                 {
                     "tool_name": "places_tool",
@@ -1077,7 +1081,7 @@
                         "search_range": 15
                     },
                     "memory": "SPA_RESULTS",
-                    "reason": "Search for a spa close to driver in a 15 km range from car"
+                    "reason": "Find a spa nearby in 15 km range"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -1085,7 +1089,17 @@
                         "media_object": "$PARSE_CALM$"
                     },
                     "memory": null,
-                    "reason": "Start playing the playlist or song found earlier"
+                    "reason": "Enqueue the calming music"
+                },
+                {
+                    "tool_name": "llm_parse_json",
+                    "args": {
+                        "query": "Get the closest spa JSON object from provided JSON list",
+                        "json_object": "$PARSE_CALM$",
+                        "return_type": "object"
+                    },
+                    "memory": "CLOSEST_SPA",
+                    "reason": "Select a single spa object"
                 },
                 {
                     "tool_name": "speak_user",
@@ -1094,155 +1108,7 @@
                         "data": "$CLOSEST_SPA$"
                     },
                     "memory": null,
-                    "reason": "Inform user about found spa"
-                },
-                {
-                    "tool_name": "llm_parse_json",
-                    "args": {
-                        "query": "Get the closest spa JSON object from provided JSON list",
-                        "json_object": "$PARSE_CALM$",
-                        "return_type": "object"
-                    },
-                    "memory": "CLOSEST_SPA",
-                    "reason": "Parse one object from JSON list returned by places tool"
-                }
-            ],
-            [
-                {
-                    "tool_name": "places_tool",
-                    "args": {
-                        "query": "spa",
-                        "location": null,
-                        "search_range": 15
-                    },
-                    "memory": "SPA_RESULTS",
-                    "reason": "Search for a spa close to driver in a 15 km range from car"
-                },
-                {
-                    "tool_name": "media_search",
-                    "args": {
-                        "query": "calming sounds",
-                        "types": [
-                            "playlist",
-                            "show",
-                            "track"
-                        ]
-                    },
-                    "memory": "MEDIA_RESULT",
-                    "reason": "Search for calming music/ nature playlist, sounds rain etc."
-                },
-                {
-                    "tool_name": "llm_parse_json",
-                    "args": {
-                        "query": "Pick the media JSON object from this list that best fits calming music. Return a single one",
-                        "return_type": "object"
-                    },
-                    "memory": "PARSE_CALM",
-                    "reason": "Select one media object from list"
-                },
-                {
-                    "tool_name": "media_control_enqueue",
-                    "args": {
-                        "media_object": "$PARSE_CALM$"
-                    },
-                    "memory": null,
-                    "reason": "Enquee the media object found"
-                },
-                {
-                    "tool_name": "speak_user",
-                    "args": {
-                        "query": "Tell the user about the spa they rquested info about",
-                        "data": "$CLOSEST_SPA$"
-                    },
-                    "memory": null,
-                    "reason": "Inform user about spa found earlier"
-                },
-                {
-                    "tool_name": "llm_parse_json",
-                    "args": {
-                        "query": "Get the closest spa JSON object from provided JSON list",
-                        "json_object": "$PARSE_CALM$",
-                        "return_type": "object"
-                    },
-                    "memory": "CLOSEST_SPA",
-                    "reason": "Start playing the playlist or song found earlier"
-                },
-                {
-                    "tool_name": "set_ambient_light",
-                    "args": {
-                        "light_color": "GREEN"
-                    },
-                    "memory": null,
-                    "reason": "Change light to green"
-                }
-            ],
-            [
-                {
-                    "tool_name": "places_tool",
-                    "args": {
-                        "query": "spa",
-                        "location": null,
-                        "search_range": 15
-                    },
-                    "memory": "SPA_RESULTS",
-                    "reason": "Search for a spa close to driver in a 15 km range from car"
-                },
-                {
-                    "tool_name": "media_search",
-                    "args": {
-                        "query": "calming sounds",
-                        "types": [
-                            "playlist",
-                            "show",
-                            "track"
-                        ]
-                    },
-                    "memory": "MEDIA_RESULT",
-                    "reason": "Search for calming music/ nature playlist, sounds rain etc."
-                },
-                {
-                    "tool_name": "llm_parse_json",
-                    "args": {
-                        "query": "Pick the media JSON object from this list that best fits calming music. Return a single one",
-                        "return_type": "object"
-                    },
-                    "memory": "PARSE_CALM",
-                    "reason": "Select one media object from JSON list returned"
-                },
-                {
-                    "tool_name": "speak_user",
-                    "args": {
-                        "query": "Tell the user about the spa they rquested info about",
-                        "data": "$CLOSEST_SPA$"
-                    },
-                    "memory": null,
-                    "reason": "Inform user about found spa"
-                },
-                {
-                    "tool_name": "media_control_enqueue",
-                    "args": {
-                        "media_object": "$PARSE_CALM$"
-                    },
-                    "memory": null,
-                    "reason": "Start playing the selected media"
-                },
-                {
-                    "tool_name": "llm_parse_json",
-                    "args": {
-                        "query": "Get the closest spa JSON object from provided JSON list",
-                        "json_object": "$PARSE_CALM$",
-                        "return_type": "object"
-                    },
-                    "memory": "CLOSEST_SPA",
-                    "reason": "Use LLM parsing to idenitfy the restaurant closest"
-                },
-                {
-                    "tool_name": "set_ambient_light",
-                    "args": {
-                        "light_color": "GREEN"
-                    },
-                    "memory": null,
-                    "reason": "Change color inside car cockpit"
+                    "reason": "Inform user about the spa"
                 }
             ]
         ]
@@ -1254,8 +1120,8 @@
                 {
                     "tool_name": "get_car_state",
                     "args": null,
-                    "memory": "$CAR_STATE$",
-                    "reason": "Check car state to get home address of user"
+                    "memory": "CAR_STATE",
+                    "reason": "Need to get car state for home location"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -1265,7 +1131,7 @@
                         "return_type": "object"
                     },
                     "memory": "HOME_ADDRESS",
-                    "reason": "Find address of driver"
+                    "reason": "Get user preference for home address"
                 },
                 {
                     "tool_name": "media_search",
@@ -1276,7 +1142,7 @@
                         ]
                     },
                     "memory": "MEDIA_RESULT",
-                    "reason": "Find a playlist to relax the user"
+                    "reason": "Search for evening relaxation music"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -1286,7 +1152,7 @@
                         "return_type": "object"
                     },
                     "memory": "NATURE_PLAYLIST",
-                    "reason": "Select one media object from JSON list"
+                    "reason": "Select a single media object to be played"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -1294,17 +1160,17 @@
                         "media_object": "$NATURE_PLAYLIST$"
                     },
                     "memory": null,
-                    "reason": "Play the media object"
+                    "reason": "Enqueue the evening relaxation music"
                 },
                 {
                     "tool_name": "places_tool",
                     "args": {
                         "query": "nature",
                         "location": null,
-                        "search_range": 100
+                        "search_range": 50
                     },
                     "memory": "NATURE_PLACES",
-                    "reason": "Search for natural places nearby"
+                    "reason": "Find nature places in 50 km range"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -1314,14 +1180,18 @@
                         "return_type": "object"
                     },
                     "memory": "NATURE_ADDRESSES",
-                    "reason": "Select three object from the list that are closest"
+                    "reason": "Select a single spa object"
                 },
                 {
                     "tool_name": "set_navigation",
                     "args": {
-                        "waypoints": "$NATURE_ADDRESSES$, $HOME_ADDRESS$"
+                        "waypoints": [
+                            "$NATURE_ADDRESSES$",
+                            "$HOME_ADDRESS$"
+                        ]
                     },
-                    "reason": "Navigate to three places of interest then back to driver home"
+                    "memory": null,
+                    "reason": "Navigate to identified nature places and then home"
                 }
             ],
             [
@@ -1334,7 +1204,7 @@
                         ]
                     },
                     "memory": "MEDIA_RESULT",
-                    "reason": "Find a playlist to relax the user"
+                    "reason": "Search for evening relaxation music"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -1344,7 +1214,7 @@
                         "return_type": "object"
                     },
                     "memory": "NATURE_PLAYLIST",
-                    "reason": "Select one media object from JSON list"
+                    "reason": "Select a single media object to be played"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -1352,17 +1222,17 @@
                         "media_object": "$NATURE_PLAYLIST$"
                     },
                     "memory": null,
-                    "reason": "Play the media object"
+                    "reason": "Enqueue the evening relaxation music"
                 },
                 {
                     "tool_name": "places_tool",
                     "args": {
                         "query": "nature",
                         "location": null,
-                        "search_range": 100
+                        "search_range": 50
                     },
                     "memory": "NATURE_PLACES",
-                    "reason": "Search for natural places nearby"
+                    "reason": "Find nature places in 50 km range"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -1372,30 +1242,34 @@
                         "return_type": "object"
                     },
                     "memory": "NATURE_ADDRESSES",
-                    "reason": "Select three object from the list that are closest"
+                    "reason": "Select a single spa object"
                 },
                 {
                     "tool_name": "get_car_state",
                     "args": null,
-                    "memory": "$CAR_STATE$",
-                    "reason": "Check car state to get home address of user"
+                    "memory": "CAR_STATE",
+                    "reason": "Need to get car state for home location"
                 },
                 {
                     "tool_name": "llm_parse_json",
                     "args": {
-                        "query": "Get address",
+                        "query": "Get user home address",
                         "json_object": "$CAR_STATE$",
                         "return_type": "object"
                     },
-                    "memory": "CAR_ADDRESS",
-                    "reason": "Find address of driver"
+                    "memory": "HOME_ADDRESS",
+                    "reason": "Get user preference for home address"
                 },
                 {
-                    "tool_name": "add_navigation",
+                    "tool_name": "set_navigation",
                     "args": {
-                        "waypoints": "$CAR_ADDRESS$"
+                        "waypoints": [
+                            "$NATURE_ADDRESSES$",
+                            "$HOME_ADDRESS$"
+                        ]
                     },
-                    "reason": "Add home address to current itinerary"
+                    "memory": null,
+                    "reason": "Navigate to identified nature places and then home"
                 }
             ],
             [
@@ -1403,51 +1277,51 @@
                     "tool_name": "get_car_state",
                     "args": null,
                     "memory": "CAR_STATE",
-                    "reason": "Check car state to get home address of user"
+                    "reason": "Need to get car state for home location"
                 },
                 {
                     "tool_name": "places_tool",
                     "args": {
                         "query": "nature",
                         "location": null,
-                        "search_range": 100
+                        "search_range": 50
                     },
                     "memory": "NATURE_PLACES",
-                    "reason": "Search for natural places nearby"
+                    "reason": "Find nature places in 50 km range"
                 },
                 {
                     "tool_name": "llm_parse_json",
                     "args": {
-                        "query": "Identify three closest places and return a JSON list of their addresseses",
+                        "query": "Identify three closest places and return a flat JSON list of their addresseses and only their addresses",
                         "json_object": "$NATURE_PLACES$",
                         "return_type": "object"
                     },
                     "memory": "NATURE_ADDRESSES",
-                    "reason": "Select three object from the list that are closest"
+                    "reason": "Select a single spa object"
                 },
                 {
                     "tool_name": "set_navigation",
                     "args": {
                         "waypoints": "$NATURE_ADDRESSES$"
                     },
-                    "reason": "Navigate to three places of interest"
+                    "memory": null,
+                    "reason": "Navigate to identified nature places"
                 },
                 {
                     "tool_name": "llm_parse_json",
                     "args": {
-                        "query": "Get address",
+                        "query": "Get driver home address",
                         "json_object": "$CAR_STATE$",
                         "return_type": "object"
                     },
-                    "memory": "CAR_ADDRESS",
-                    "reason": "Find address of driver"
+                    "memory": "HOME_ADDRESS",
+                    "reason": "Get user preference for home address"
                 },
                 {
                     "tool_name": "add_navigation",
                     "args": {
-                        "waypoints": "$CAR_ADDRESS$"
-                    },
-                    "reason": "Add home address to current itinerary"
+                        "waypoints": "$HOME_ADDRESS$"
+                    }
                 },
                 {
                     "tool_name": "media_search",
@@ -1458,7 +1332,7 @@
                         ]
                     },
                     "memory": "MEDIA_RESULT",
-                    "reason": "Find a playlist to relax the user"
+                    "reason": "Search for evening relaxation music"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -1468,7 +1342,7 @@
                         "return_type": "object"
                     },
                     "memory": "NATURE_PLAYLIST",
-                    "reason": "Select one media object from JSON list"
+                    "reason": "Select a single media object to be played"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -1476,7 +1350,7 @@
                         "media_object": "$NATURE_PLAYLIST$"
                     },
                     "memory": null,
-                    "reason": "Play the media object"
+                    "reason": "Enqueue the evening relaxation music"
                 }
             ]
         ]
@@ -1495,7 +1369,7 @@
                         ]
                     },
                     "memory": "ADELE_SONGS",
-                    "reason": "Search media made by adele"
+                    "reason": "Search for Adele songs"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -1505,7 +1379,7 @@
                         "return_type": "object"
                     },
                     "memory": "ADELE_SONG",
-                    "reason": "Use pop culture knowledge to select the most populat adele song"
+                    "reason": "Select a single object out of list that is closest"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -1513,7 +1387,7 @@
                         "media_object": "$ADELE_SONG"
                     },
                     "memory": null,
-                    "reason": "Play the found song"
+                    "reason": "Enqueue the most popular Adele song"
                 },
                 {
                     "tool_name": "search_internet",
@@ -1521,7 +1395,7 @@
                         "query": "fun adele singer facts"
                     },
                     "memory": "ADELE_FUN_FACTS",
-                    "reason": "Search facts about singer adele"
+                    "reason": "Search for fun facts about Adele"
                 },
                 {
                     "tool_name": "speak_user",
@@ -1530,7 +1404,7 @@
                         "data": "$ADELE_FUN_FACTS$"
                     },
                     "memory": null,
-                    "reason": "Tell user about facts found by adele"
+                    "reason": "Tell user about Adele facts"
                 }
             ],
             [
@@ -1540,7 +1414,7 @@
                         "query": "fun adele singer facts"
                     },
                     "memory": "ADELE_FUN_FACTS",
-                    "reason": "Search facts about singer adele"
+                    "reason": "Search for fun facts about Adele"
                 },
                 {
                     "tool_name": "speak_user",
@@ -1549,7 +1423,7 @@
                         "data": "$ADELE_FUN_FACTS$"
                     },
                     "memory": null,
-                    "reason": "Tell user about facts found by adele"
+                    "reason": "Tell user about Adele facts"
                 },
                 {
                     "tool_name": "media_search",
@@ -1561,7 +1435,7 @@
                         ]
                     },
                     "memory": "ADELE_SONGS",
-                    "reason": "Search media made by adele"
+                    "reason": "Search for Adele songs"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -1571,7 +1445,7 @@
                         "return_type": "object"
                     },
                     "memory": "ADELE_SONG",
-                    "reason": "Use pop culture knowledge to select the most populat adele song"
+                    "reason": "Select a single object out of list that is closest"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -1579,7 +1453,7 @@
                         "media_object": "$ADELE_SONG"
                     },
                     "memory": null,
-                    "reason": "Play the found song"
+                    "reason": "Enqueue the most popular Adele song"
                 }
             ],
             [
@@ -1589,7 +1463,7 @@
                         "query": "fun adele singer facts"
                     },
                     "memory": "ADELE_FUN_FACTS",
-                    "reason": "Find facts about adele"
+                    "reason": "Search for fun facts about Adele"
                 },
                 {
                     "tool_name": "media_search",
@@ -1601,7 +1475,7 @@
                         ]
                     },
                     "memory": "ADELE_SONGS",
-                    "reason": "Search facts about singer adele"
+                    "reason": "Search for Adele songs"
                 },
                 {
                     "tool_name": "speak_user",
@@ -1610,7 +1484,7 @@
                         "data": "$ADELE_FUN_FACTS$"
                     },
                     "memory": null,
-                    "reason": "Tell user about facts found by adele"
+                    "reason": "Tell user about Adele facts"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -1620,7 +1494,7 @@
                         "return_type": "object"
                     },
                     "memory": "ADELE_SONG",
-                    "reason": "Use pop culture knowledge to select the most populat adele song"
+                    "reason": "Select a single object out of list that is closest"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -1628,7 +1502,7 @@
                         "media_object": "$ADELE_SONG"
                     },
                     "memory": null,
-                    "reason": "Play the found song"
+                    "reason": "Enqueue the most popular Adele song"
                 }
             ],
             [
@@ -1642,7 +1516,7 @@
                         ]
                     },
                     "memory": "ADELE_SONGS",
-                    "reason": "Search media made by adele"
+                    "reason": "Search for Adele songs"
                 },
                 {
                     "tool_name": "search_internet",
@@ -1650,7 +1524,7 @@
                         "query": "fun adele singer facts"
                     },
                     "memory": "ADELE_FUN_FACTS",
-                    "reason": "Search facts about singer adele"
+                    "reason": "Search for fun facts about Adele"
                 },
                 {
                     "tool_name": "speak_user",
@@ -1659,7 +1533,7 @@
                         "data": "$ADELE_FUN_FACTS$"
                     },
                     "memory": null,
-                    "reason": "Tell user about facts found by adele"
+                    "reason": "Tell user about Adele facts"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -1669,7 +1543,7 @@
                         "return_type": "object"
                     },
                     "memory": "ADELE_SONG",
-                    "reason": "Use pop culture knowledge to select the most populat adele song"
+                    "reason": "Select a single song to play"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -1677,7 +1551,7 @@
                         "media_object": "$ADELE_SONG"
                     },
                     "memory": null,
-                    "reason": "Play the found song"
+                    "reason": "Enqueue the most popular Adele song"
                 }
             ]
         ]
@@ -1696,7 +1570,7 @@
                         ]
                     },
                     "memory": "ADELE_SONGS",
-                    "reason": "Search media made by adele"
+                    "reason": "Search for Adele songs"
                 },
                 {
                     "tool_name": "search_internet",
@@ -1704,7 +1578,7 @@
                         "query": "adele singer birthday"
                     },
                     "memory": "ADELE_BIRTHDAY",
-                    "reason": "Search facts about singer adele"
+                    "reason": "Search for Adele's birth year"
                 },
                 {
                     "tool_name": "speak_user",
@@ -1713,7 +1587,7 @@
                         "data": "$ADELE_BIRTHDAY$"
                     },
                     "memory": null,
-                    "reason": "Tell user about facts found by adele"
+                    "reason": "Tell user birth year of Adele"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -1723,7 +1597,7 @@
                         "return_type": "object"
                     },
                     "memory": "ADELE_SONG",
-                    "reason": "Use pop culture knowledge to select the most populat adele song"
+                    "reason": "Select a single song to play"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -1731,7 +1605,7 @@
                         "media_object": "$ADELE_SONG"
                     },
                     "memory": null,
-                    "reason": "Play the found song"
+                    "reason": "Enqueue the most popular Adele song"
                 }
             ],
             [
@@ -1745,14 +1619,15 @@
                         ]
                     },
                     "memory": "ADELE_SONGS",
-                    "reason": "Search facts about singer adele"
+                    "reason": "Search for Adele songs"
                 },
                 {
                     "tool_name": "search_internet",
                     "args": {
                         "query": "adele singer birthday"
                     },
-                    "memory": "ADELE_BIRTHDAY"
+                    "memory": "ADELE_BIRTHDAY",
+                    "reason": "Search for Adele's birth year"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -1762,7 +1637,7 @@
                         "return_type": "object"
                     },
                     "memory": "ADELE_SONG",
-                    "reason": "Use pop culture knowledge to select the most populat adele song"
+                    "reason": "Select a single song to play"
                 },
                 {
                     "tool_name": "speak_user",
@@ -1771,7 +1646,7 @@
                         "data": "$ADELE_BIRTHDAY$"
                     },
                     "memory": null,
-                    "reason": "Tell user about facts found by adele"
+                    "reason": "Tell user birth year of Adele"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -1779,7 +1654,7 @@
                         "media_object": "$ADELE_SONG"
                     },
                     "memory": null,
-                    "reason": "Play the found song"
+                    "reason": "Enqueue the most popular Adele song"
                 }
             ],
             [
@@ -1793,7 +1668,7 @@
                         ]
                     },
                     "memory": "ADELE_SONGS",
-                    "reason": "Search media made by adele"
+                    "reason": "Search for Adele songs"
                 },
                 {
                     "tool_name": "search_internet",
@@ -1801,7 +1676,7 @@
                         "query": "adele singer birthday"
                     },
                     "memory": "ADELE_BIRTHDAY",
-                    "reason": "Search birthday of singer adele"
+                    "reason": "Search for Adele's birth year"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -1811,7 +1686,7 @@
                         "return_type": "object"
                     },
                     "memory": "ADELE_SONG",
-                    "reason": "Use pop culture knowledge to select the most populat adele song"
+                    "reason": "Select a single song to play"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -1819,7 +1694,7 @@
                         "media_object": "$ADELE_SONG"
                     },
                     "memory": null,
-                    "reason": "Play the found song"
+                    "reason": "Enqueue the most popular Adele song"
                 },
                 {
                     "tool_name": "speak_user",
@@ -1828,7 +1703,7 @@
                         "data": "$ADELE_BIRTHDAY$"
                     },
                     "memory": null,
-                    "reason": "Tell user about facts found by adele"
+                    "reason": "Tell user birth year of Adele"
                 }
             ]
         ]
@@ -1840,12 +1715,12 @@
                 {
                     "tool_name": "places_tool",
                     "args": {
-                        "query": "film studi",
+                        "query": "film studio",
                         "location": null,
-                        "search_range": 300
+                        "search_range": 50
                     },
                     "memory": "STUDIO_RESULT",
-                    "reason": "Search for film studios nearby"
+                    "reason": "Find film studio in 50 km range"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -1855,7 +1730,7 @@
                         "return_type": "string"
                     },
                     "memory": "STUDIO_NAME",
-                    "reason": "Get name of studio"
+                    "reason": "Get the name of the studio"
                 },
                 {
                     "tool_name": "search_internet",
@@ -1863,7 +1738,7 @@
                         "query": "facts about film studio $STUDIO_NAME$"
                     },
                     "memory": "SEARCH_RESULT_INTERNET",
-                    "reason": "search the studio found earlier"
+                    "reason": "Search for facts about the studio"
                 },
                 {
                     "tool_name": "speak_user",
@@ -1872,7 +1747,7 @@
                         "data": "$SEARCH_RESULT_INTERNET$"
                     },
                     "memory": null,
-                    "reason": "Summarize the facts found on internet to user"
+                    "reason": "Tell user facts about the studio"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -1892,7 +1767,7 @@
                         ]
                     },
                     "memory": null,
-                    "reason": "Navigate to film studio"
+                    "reason": "Navigate to the studio"
                 }
             ]
         ]
@@ -1910,7 +1785,7 @@
                         ]
                     },
                     "memory": "SYMPHONY",
-                    "reason": "Find symphonies of mozart"
+                    "reason": "Search for Beethoven's symphony"
                 },
                 {
                     "tool_name": "search_internet",
@@ -1918,14 +1793,7 @@
                         "query": "Beethoven interesting facts"
                     },
                     "memory": "FUN_FACTS",
-                    "reason": "Find facts about beethoven"
-                },
-                {
-                    "tool_name": "media_control_enqueue",
-                    "args": {
-                        "media_object": "SYMPHONY"
-                    },
-                    "reason": "Play identified symphony"
+                    "reason": "Search for interesting facts about Beethoven"
                 },
                 {
                     "tool_name": "speak_user",
@@ -1934,7 +1802,7 @@
                         "data": "$FUN_FACTS"
                     },
                     "memory": null,
-                    "reason": "Tell to user about beethoven"
+                    "reason": "Tell user facts about Beethoven"
                 }
             ]
         ]
@@ -1951,7 +1819,7 @@
                         "search_range": 10
                     },
                     "memory": "GYM_RESULT",
-                    "reason": "Find nearby gyms"
+                    "reason": "Find gym in 10 km range"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -1961,7 +1829,7 @@
                         "return_type": "string"
                     },
                     "memory": "GYM_ADDRESS",
-                    "reason": "Get the address of one closest one"
+                    "reason": "Get the address of the gym"
                 },
                 {
                     "tool_name": "places_tool",
@@ -1971,7 +1839,7 @@
                         "search_range": 10
                     },
                     "memory": "SMOOTHIE_BAR",
-                    "reason": "Find a place selling smoothies near the gym"
+                    "reason": "Find smoothie bar near gym"
                 },
                 {
                     "tool_name": "speak_user",
@@ -1980,7 +1848,7 @@
                         "data": "$SMOOTHIE_BAR$"
                     },
                     "memory": null,
-                    "reason": "Tell user a smoothie place was found"
+                    "reason": "Tell user about the smoothie bar"
                 },
                 {
                     "tool_name": "set_navigation",
@@ -1990,7 +1858,7 @@
                         ]
                     },
                     "memory": null,
-                    "reason": "Navigate to the gym found earlier"
+                    "reason": "Navigate to the gym"
                 }
             ],
             [
@@ -2002,7 +1870,7 @@
                         "search_range": 10
                     },
                     "memory": "GYM_RESULT",
-                    "reason": "Find nearby gyms"
+                    "reason": "Find gym in 10 km range"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -2012,7 +1880,7 @@
                         "return_type": "string"
                     },
                     "memory": "GYM_ADDRESS",
-                    "reason": "Get the address of one closest one"
+                    "reason": "Get the address of the gym"
                 },
                 {
                     "tool_name": "set_navigation",
@@ -2022,7 +1890,7 @@
                         ]
                     },
                     "memory": null,
-                    "reason": "Navigate to the gym found earlier"
+                    "reason": "Navigate to the gym"
                 },
                 {
                     "tool_name": "places_tool",
@@ -2032,7 +1900,7 @@
                         "search_range": 10
                     },
                     "memory": "SMOOTHIE_BAR",
-                    "reason": "Find a place selling smoothies near the gym"
+                    "reason": "Find smoothie bar near gym"
                 },
                 {
                     "tool_name": "speak_user",
@@ -2041,7 +1909,7 @@
                         "data": "$SMOOTHIE_BAR$"
                     },
                     "memory": null,
-                    "reason": "Tell user a smoothie place was found"
+                    "reason": "Tell user about the smoothie bar"
                 }
             ],
             [
@@ -2053,7 +1921,7 @@
                         "search_range": 10
                     },
                     "memory": "GYM_RESULT",
-                    "reason": "Find nearby gyms"
+                    "reason": "Find gym in 10 km range"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -2063,7 +1931,7 @@
                         "return_type": "string"
                     },
                     "memory": "GYM_ADDRESS",
-                    "reason": "Get the address of one closest one"
+                    "reason": "Get the address of the gym"
                 },
                 {
                     "tool_name": "set_navigation",
@@ -2073,7 +1941,7 @@
                         ]
                     },
                     "memory": null,
-                    "reason": "Navigate to the gym found earlier"
+                    "reason": "Navigate to the gym"
                 },
                 {
                     "tool_name": "places_tool",
@@ -2083,7 +1951,7 @@
                         "search_range": 10
                     },
                     "memory": "SMOOTHIE_BAR",
-                    "reason": "Find a place selling smoothies near the gym"
+                    "reason": "Find smoothie bar near gym"
                 },
                 {
                     "tool_name": "speak_user",
@@ -2092,7 +1960,7 @@
                         "data": "$SMOOTHIE_BAR$"
                     },
                     "memory": null,
-                    "reason": "Tell user a smoothie place was found"
+                    "reason": "Tell user about the smoothie bar"
                 }
             ]
         ]
@@ -2107,7 +1975,7 @@
                         "query": "Center city Rome Italy"
                     },
                     "memory": "WEATHER_REPORT",
-                    "reason": "Find the weather situation in Rome"
+                    "reason": "Get weather report for Rome"
                 },
                 {
                     "tool_name": "speak_user",
@@ -2116,17 +1984,17 @@
                         "data": "$WEATHER_REPORT$"
                     },
                     "memory": null,
-                    "reason": "Tell the suer how weather is in Rome"
+                    "reason": "Tell user about the weather"
                 },
                 {
                     "tool_name": "llm_parse_json",
                     "args": {
-                        "query": "Invent a spotify search that matches the mood in the following weather report",
+                        "query": "Invent a spotify search that matches the mood in the following weather report. Be creative, use 3-5 words.",
                         "json_object": "$WEATHER_REPORT$",
                         "return_type": "string"
                     },
                     "memory": "WEATHER_QUERY",
-                    "reason": "Transform the weather report into a creative query for spotify"
+                    "reason": "Invent a Spotify search based on weather"
                 },
                 {
                     "tool_name": "media_search",
@@ -2139,7 +2007,7 @@
                         ]
                     },
                     "memory": "MEDIA_WEATHER",
-                    "reason": "Search media tool with the invented query"
+                    "reason": "Search for music based on weather"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -2149,7 +2017,7 @@
                         "return_type": "object"
                     },
                     "memory": "WHAT_PLAY",
-                    "reason": "Select one media object from list"
+                    "reason": "Select a single media object to be played"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -2157,7 +2025,7 @@
                         "media_object": "$WHAT_PLAY$"
                     },
                     "memory": null,
-                    "reason": "Play selected media object"
+                    "reason": "Enqueue the music"
                 }
             ],
             [
@@ -2167,7 +2035,7 @@
                         "query": "Center city Rome Italy"
                     },
                     "memory": "WEATHER_REPORT",
-                    "reason": "Find the weather situation in Rome"
+                    "reason": "Get weather report for Rome"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -2177,7 +2045,7 @@
                         "return_type": "string"
                     },
                     "memory": "WEATHER_QUERY",
-                    "reason": "Transform the weather report into a creative query for spotify"
+                    "reason": "Invent a Spotify search based on weather"
                 },
                 {
                     "tool_name": "media_search",
@@ -2190,7 +2058,7 @@
                         ]
                     },
                     "memory": "MEDIA_WEATHER",
-                    "reason": "Search media tool with the invented query"
+                    "reason": "Search for music based on weather"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -2200,7 +2068,7 @@
                         "return_type": "object"
                     },
                     "memory": "WHAT_PLAY",
-                    "reason": "Select one media object from list"
+                    "reason": "Select a single media object to be played"
                 },
                 {
                     "tool_name": "speak_user",
@@ -2209,7 +2077,7 @@
                         "data": "$WEATHER_REPORT$"
                     },
                     "memory": null,
-                    "reason": "Tell the suer how weather is in Rome"
+                    "reason": "Tell user about the weather"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -2217,7 +2085,7 @@
                         "media_object": "$WHAT_PLAY$"
                     },
                     "memory": null,
-                    "reason": "Play selected media object"
+                    "reason": "Enqueue the music"
                 }
             ],
             [
@@ -2227,7 +2095,7 @@
                         "query": "Center city Rome Italy"
                     },
                     "memory": "WEATHER_REPORT",
-                    "reason": "Find the weather situation in Rome"
+                    "reason": "Get weather report for Rome"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -2237,7 +2105,7 @@
                         "return_type": "string"
                     },
                     "memory": "WEATHER_QUERY",
-                    "reason": "Transform the weather report into a creative query for spotify"
+                    "reason": "Invent a Spotify search based on weather"
                 },
                 {
                     "tool_name": "speak_user",
@@ -2246,7 +2114,7 @@
                         "data": "$WEATHER_REPORT$"
                     },
                     "memory": null,
-                    "reason": "Tell the user how weather is in Rome"
+                    "reason": "Tell user about the weather"
                 },
                 {
                     "tool_name": "media_search",
@@ -2258,7 +2126,8 @@
                             "track"
                         ]
                     },
-                    "memory": "MEDIA_WEATHER"
+                    "memory": "MEDIA_WEATHER",
+                    "reason": "Search for music based on weather"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -2268,7 +2137,7 @@
                         "return_type": "object"
                     },
                     "memory": "WHAT_PLAY",
-                    "reason": "Transform the weather report into a creative query for spotify"
+                    "reason": "Select a single media object to be played"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -2276,7 +2145,7 @@
                         "media_object": "$WHAT_PLAY$"
                     },
                     "memory": null,
-                    "reason": "Play selected media object"
+                    "reason": "Enqueue the music"
                 }
             ]
         ]
@@ -2293,7 +2162,7 @@
                         "search_range": 30
                     },
                     "memory": "SEARCH_RESULT",
-                    "reason": "Search for closest art galleries"
+                    "reason": "Find art gallery in 30 km range"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -2303,7 +2172,7 @@
                         "return_type": "string"
                     },
                     "memory": "GALLERY_ADDRESS",
-                    "reason": "Get the address of closest art gallery"
+                    "reason": "Get the address of the gallery"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -2313,7 +2182,7 @@
                         "return_type": "string"
                     },
                     "memory": "GALLERY_NAME",
-                    "reason": "Get name of the closest art gallery"
+                    "reason": "Get the name of the gallery"
                 },
                 {
                     "tool_name": "search_internet",
@@ -2321,7 +2190,7 @@
                         "query": "art galleries at $GALLERY_NAME$"
                     },
                     "memory": "INTERNET_SEARCH",
-                    "reason": "Look up internet for displays currently in the art gallery"
+                    "reason": "Search for art galleries"
                 },
                 {
                     "tool_name": "speak_user",
@@ -2330,7 +2199,7 @@
                         "data": "$INTERNET_SEARCH$"
                     },
                     "memory": null,
-                    "reason": "Tell user about current art galleries"
+                    "reason": "Tell user about the art galleries"
                 },
                 {
                     "tool_name": "set_navigation",
@@ -2340,7 +2209,7 @@
                         ]
                     },
                     "memory": null,
-                    "reason": "Navigate to the art gallery"
+                    "reason": "Navigate to the gallery"
                 }
             ]
         ]
@@ -2357,7 +2226,7 @@
                         "search_range": 30
                     },
                     "memory": "STADIUM_LIST",
-                    "reason": "Find stadium nearby"
+                    "reason": "Find stadium in 30 km range"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -2367,13 +2236,7 @@
                         "return_type": "object"
                     },
                     "memory": "BEST_STADIUM_ADDRESS",
-                    "reason": "Get the address of the biggest stadium"
-                },
-                {
-                    "tool_name": "get_current_date",
-                    "args": null,
-                    "memory": "CURR_TIME",
-                    "reason": "Need time to compare with opening hours"
+                    "reason": "Get the address of the stadium"
                 },
                 {
                     "tool_name": "set_navigation",
@@ -2383,7 +2246,7 @@
                         ]
                     },
                     "memory": null,
-                    "reason": "Set navigation to the stadium"
+                    "reason": "Navigate to the stadium"
                 },
                 {
                     "tool_name": "places_tool",
@@ -2393,16 +2256,16 @@
                         "search_range": 2
                     },
                     "memory": "MERCHANDISE",
-                    "reason": "Search for a merchandise store near the found stadium"
+                    "reason": "Find merchandise store near stadium"
                 },
                 {
                     "tool_name": "speak_user",
                     "args": {
                         "query": "Tell the user if the merchandise store is open given a JSON description",
-                        "data": "$MERCHANDISE$ Current time: $CURR_TIME$"
+                        "data": "$MERCHANDISE$"
                     },
                     "memory": null,
-                    "reason": "Look at the opening hours of store and tell user if it is open"
+                    "reason": "Tell user about the store"
                 }
             ],
             [
@@ -2414,7 +2277,7 @@
                         "search_range": 30
                     },
                     "memory": "STADIUM_LIST",
-                    "reason": "Find stadium nearby"
+                    "reason": "Find stadium in 30 km range"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -2424,7 +2287,7 @@
                         "return_type": "object"
                     },
                     "memory": "BEST_STADIUM_ADDRESS",
-                    "reason": "Get the address of the biggest stadium"
+                    "reason": "Get the address of the stadium"
                 },
                 {
                     "tool_name": "places_tool",
@@ -2434,7 +2297,7 @@
                         "search_range": 2
                     },
                     "memory": "MERCHANDISE",
-                    "reason": "Search for a merchandise store near the found stadium"
+                    "reason": "Find merchandise store near stadium"
                 },
                 {
                     "tool_name": "set_navigation",
@@ -2444,7 +2307,7 @@
                         ]
                     },
                     "memory": null,
-                    "reason": "Set navigation to the stadium"
+                    "reason": "Navigate to the stadium"
                 },
                 {
                     "tool_name": "speak_user",
@@ -2453,7 +2316,7 @@
                         "data": "$MERCHANDISE$"
                     },
                     "memory": null,
-                    "reason": "Look at the opening hours of store and tell user if it is open"
+                    "reason": "Tell user about the store"
                 }
             ]
         ]
@@ -2468,7 +2331,7 @@
                         "driving_mode": "EFFICIENT"
                     },
                     "memory": null,
-                    "reason": "Use driving mode tool"
+                    "reason": "Set the car in eco mode"
                 }
             ]
         ]
@@ -2483,7 +2346,7 @@
                         "driving_mode": "SPORT"
                     },
                     "memory": null,
-                    "reason": "Use driving mode tool to change mode"
+                    "reason": "Set the car in sport mode"
                 },
                 {
                     "tool_name": "set_temperature",
@@ -2501,7 +2364,7 @@
                         "seatzone": "PASSENGER"
                     },
                     "memory": null,
-                    "reason": "Set passanger temperature to 25"
+                    "reason": "Set copilot temperature to 25"
                 }
             ],
             [
@@ -2511,14 +2374,15 @@
                         "driving_mode": "SPORT"
                     },
                     "memory": null,
-                    "reason": "Use driving mode tool to change mode"
+                    "reason": "Set the car in sport mode"
                 },
                 {
                     "tool_name": "set_temperature",
                     "args": {
                         "temperature": 25,
                         "seatzone": "PASSENGER"
-                    }
+                    },
+                    "memory": null
                 },
                 {
                     "tool_name": "set_temperature",
@@ -2538,27 +2402,8 @@
                         "seatzone": "PASSENGER"
                     },
                     "memory": null,
-                    "reason": "Set passanger temperature to 25"
+                    "reason": "Set copilot temperature to 25"
                 },
-                {
-                    "tool_name": "set_temperature",
-                    "args": {
-                        "temperature": 25,
-                        "seatzone": "DRIVER"
-                    },
-                    "memory": null,
-                    "reason": "Set driver temperature to 25"
-                },
-                {
-                    "tool_name": "set_driving_mode",
-                    "args": {
-                        "driving_mode": "SPORT"
-                    },
-                    "memory": null,
-                    "reason": "Use driving mode tool to change to sport"
-                }
-            ],
-            [
                 {
                     "tool_name": "set_temperature",
                     "args": {
@@ -2574,7 +2419,26 @@
                         "driving_mode": "SPORT"
                     },
                     "memory": null,
-                    "reason": "Use driving mode tool to change to sport"
+                    "reason": "Set the car in sport mode"
+                }
+            ],
+            [
+                {
+                    "tool_name": "set_temperature",
+                    "args": {
+                        "temperature": 25,
+                        "seatzone": "DRIVER"
+                    },
+                    "memory": null,
+                    "reason": "Set driver temperature to 25"
+                },
+                {
+                    "tool_name": "set_driving_mode",
+                    "args": {
+                        "driving_mode": "SPORT"
+                    },
+                    "memory": null,
+                    "reason": "Set the car in sport mode"
                 },
                 {
                     "tool_name": "set_temperature",
@@ -2583,7 +2447,7 @@
                         "seatzone": "PASSENGER"
                     },
                     "memory": null,
-                    "reason": "Set temperature to passanger to 25"
+                    "reason": "Set copilot temperature to 25"
                 }
             ]
         ]
@@ -2599,7 +2463,7 @@
                         "what_window": "DRIVER"
                     },
                     "memory": null,
-                    "reason": "Open driver window"
+                    "reason": "Open driver window fully"
                 }
             ]
         ]
@@ -2615,7 +2479,7 @@
                         "what_window": "DRIVER"
                     },
                     "memory": null,
-                    "reason": "Close driver window"
+                    "reason": "Close driver window fully"
                 }
             ]
         ]
@@ -2631,7 +2495,7 @@
                         "what_window": "RIGHT"
                     },
                     "memory": null,
-                    "reason": "Open back right window a bit"
+                    "reason": "Open right back window a bit"
                 }
             ]
         ]
@@ -2647,7 +2511,7 @@
                         "what_window": "RIGHT"
                     },
                     "memory": null,
-                    "reason": "Close back right window"
+                    "reason": "Close right back window"
                 }
             ],
             [
@@ -2658,7 +2522,7 @@
                         "what_window": "LEFT"
                     },
                     "memory": null,
-                    "reason": "Close back left window"
+                    "reason": "Close left back window"
                 }
             ]
         ]
@@ -2671,7 +2535,7 @@
                     "tool_name": "get_current_date",
                     "args": null,
                     "memory": "CURRENT_DATE",
-                    "reason": "Get current date"
+                    "reason": "Get the current date"
                 },
                 {
                     "condition": "$CURRENT_DATE$ is a Monday",
@@ -2682,22 +2546,24 @@
                                 "query": "Tell user a joke",
                                 "data": null
                             },
-                            "reason": "Tell a joke to driver",
-                            "memory": null
+                            "memory": null,
+                            "reason": "Tell user a joke since it is Monday"
                         }
                     ]
                 },
                 {
                     "condition": "$CURRENT_DATE$ is not a Monday",
-                    "tools": {
-                        "tool_name": "speak_user",
-                        "args": {
-                            "query": "Explain user why BMW is a good car brand",
-                            "data": null
-                        },
-                        "memory": null,
-                        "reason": "Talk to driver about BMW brand"
-                    }
+                    "tools": [
+                        {
+                            "tool_name": "speak_user",
+                            "args": {
+                                "query": "Explain user why BMW is a good car brand",
+                                "data": null
+                            },
+                            "memory": null,
+                            "reason": "Explain why BMW is a good car brand as it is not monday outside"
+                        }
+                    ]
                 }
             ]
         ]
@@ -2712,7 +2578,7 @@
                         "query": null
                     },
                     "memory": "WEATHER_REPORT",
-                    "reason": "Get current weather"
+                    "reason": "Get the weather report"
                 },
                 {
                     "condition": "Will it rain soon based on data: $WEATHER_REPORT$",
@@ -2725,7 +2591,7 @@
                                 "search_range": 20
                             },
                             "memory": "GYM_SEARCH",
-                            "reason": "Sunny, get gyms nearby"
+                            "reason": "Find gym in 20 km range since it is sunny outside"
                         },
                         {
                             "tool_name": "llm_parse_json",
@@ -2735,7 +2601,7 @@
                                 "return_type": "string"
                             },
                             "memory": "CLOSEST_GYM_ADDRESS",
-                            "reason": "Parse the address of closest gym"
+                            "reason": "Get the address of the gym"
                         },
                         {
                             "tool_name": "set_navigation",
@@ -2745,7 +2611,7 @@
                                 ]
                             },
                             "memory": null,
-                            "reason": "Navigate to closest gym"
+                            "reason": "Navigate to the gym"
                         }
                     ]
                 },
@@ -2760,7 +2626,7 @@
                                 "search_range": 20
                             },
                             "memory": "BURGERS",
-                            "reason": "Rainy, search for burger stores"
+                            "reason": "Find burger places in 20 km range since it will rain"
                         },
                         {
                             "tool_name": "llm_parse_json",
@@ -2770,7 +2636,7 @@
                                 "return_type": "string"
                             },
                             "memory": "CLOSEST_BURGER_ADDRESS",
-                            "reason": "Parse the address of closest burger store"
+                            "reason": "Get the address of the burger place"
                         },
                         {
                             "tool_name": "set_navigation",
@@ -2780,7 +2646,7 @@
                                 ]
                             },
                             "memory": null,
-                            "reason": "Navigate to closest burger store"
+                            "reason": "Navigate to the burger place"
                         }
                     ]
                 }
@@ -2795,7 +2661,7 @@
                     "tool_name": "get_current_date",
                     "args": null,
                     "memory": "CURRENT_DATE",
-                    "reason": "Get current date"
+                    "reason": "Get the current date"
                 },
                 {
                     "condition": "$CURRENT_DATE$ is a weekend day",
@@ -2806,7 +2672,7 @@
                                 "light_color": "GREEN"
                             },
                             "memory": null,
-                            "reason": "Weekend, set color to green"
+                            "reason": "Set the light to green since it is weekend"
                         }
                     ]
                 },
@@ -2819,7 +2685,7 @@
                                 "light_color": "ORANGE"
                             },
                             "memory": null,
-                            "reason": "Weekday, set color to orange"
+                            "reason": "Set the light to orange since it is not weekend"
                         }
                     ]
                 }
@@ -2837,7 +2703,7 @@
                         "seatzone": "LEFT"
                     },
                     "memory": null,
-                    "reason": "Set temperature for passenger left to 22"
+                    "reason": "Set the temperature for the left back seat to 22"
                 },
                 {
                     "tool_name": "set_temperature",
@@ -2846,7 +2712,7 @@
                         "seatzone": "RIGHT"
                     },
                     "memory": null,
-                    "reason": "Set temperature for passenger right to 22"
+                    "reason": "Set the temperature for the right back seat to 22"
                 },
                 {
                     "tool_name": "media_search",
@@ -2857,7 +2723,7 @@
                         ]
                     },
                     "memory": "THE",
-                    "reason": "Search playlists with indie music"
+                    "reason": "Search for popular indie music"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -2867,7 +2733,7 @@
                         "return_type": "object"
                     },
                     "memory": "O",
-                    "reason": "Select one object from JSON list returned"
+                    "reason": "Select a playlist to be played"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -2875,17 +2741,26 @@
                         "media_object": "$O$"
                     },
                     "memory": null,
-                    "reason": "Start playing the playlist"
+                    "reason": "Enqueue the music"
                 },
                 {
                     "tool_name": "llm_parse_json",
                     "args": {
-                        "query": "What colour best describes this music playlist. Answer one word only.\n$O$",
-                        "json_object": "$O$",
+                        "query": "Select best ambient light colour to listen to indie music from choices bellow",
+                        "json_object": [
+                            "beige",
+                            "blue",
+                            "cyan",
+                            "green",
+                            "orange",
+                            "red",
+                            "white",
+                            "yellow"
+                        ],
                         "return_type": "string"
                     },
                     "memory": "C",
-                    "reason": "Suggest to user a color to match the content of playlist"
+                    "reason": "Select the best ambient light colour"
                 },
                 {
                     "tool_name": "set_ambient_light",
@@ -2893,7 +2768,7 @@
                         "light_color": "$C$"
                     },
                     "memory": null,
-                    "reason": "Set interior light to one picked earlier"
+                    "reason": "Set the ambient light to the selected colour"
                 }
             ],
             [
@@ -2904,7 +2779,7 @@
                         "seatzone": "LEFT"
                     },
                     "memory": null,
-                    "reason": "Set temperature for passenger left to 22"
+                    "reason": "Set the temperature for the left back seat to 22"
                 },
                 {
                     "tool_name": "set_temperature",
@@ -2913,7 +2788,7 @@
                         "seatzone": "RIGHT"
                     },
                     "memory": null,
-                    "reason": "Set temperature for passenger right to 22"
+                    "reason": "Set the temperature for the right back seat to 22"
                 },
                 {
                     "tool_name": "media_search",
@@ -2924,7 +2799,7 @@
                         ]
                     },
                     "memory": "THE",
-                    "reason": "Search playlists with indie music"
+                    "reason": "Search for popular indie music"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -2934,17 +2809,26 @@
                         "return_type": "object"
                     },
                     "memory": "O",
-                    "reason": "Select one playlist from JSON list"
+                    "reason": "Select a playlist to be played"
                 },
                 {
                     "tool_name": "llm_parse_json",
                     "args": {
-                        "query": "What colour best describes this music playlist. Answer one word only.\n$O$",
-                        "json_object": "$O$",
+                        "query": "Select best ambient light colour to listen to indie music from choices bellow",
+                        "json_object": [
+                            "beige",
+                            "blue",
+                            "cyan",
+                            "green",
+                            "orange",
+                            "red",
+                            "white",
+                            "yellow"
+                        ],
                         "return_type": "string"
                     },
                     "memory": "C",
-                    "reason": "Pick color to describe the picked playlist"
+                    "reason": "Select the best ambient light colour"
                 },
                 {
                     "tool_name": "set_ambient_light",
@@ -2952,7 +2836,7 @@
                         "light_color": "$C$"
                     },
                     "memory": null,
-                    "reason": "Set color inside the car"
+                    "reason": "Set the ambient light to the selected colour"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -2960,7 +2844,7 @@
                         "media_object": "$O$"
                     },
                     "memory": null,
-                    "reason": "Start playing the indie playlist"
+                    "reason": "Enqueue the music"
                 }
             ],
             [
@@ -2971,7 +2855,7 @@
                         "seatzone": "LEFT"
                     },
                     "memory": null,
-                    "reason": "Set temperature for passenger left to 22"
+                    "reason": "Set the temperature for the left back seat to 22"
                 },
                 {
                     "tool_name": "set_temperature",
@@ -2980,7 +2864,7 @@
                         "seatzone": "RIGHT"
                     },
                     "memory": null,
-                    "reason": "Set temperature for passenger right to 22"
+                    "reason": "Set the temperature for the right back seat to 22"
                 },
                 {
                     "tool_name": "media_search",
@@ -2991,7 +2875,7 @@
                         ]
                     },
                     "memory": "THE",
-                    "reason": "Search playlists with indie music"
+                    "reason": "Search for popular indie music"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -3000,7 +2884,8 @@
                         "json_object": "$THE$",
                         "return_type": "object"
                     },
-                    "memory": "O"
+                    "memory": "O",
+                    "reason": "Select a playlist to be played"
                 },
                 {
                     "tool_name": "media_control_enqueue",
@@ -3008,17 +2893,26 @@
                         "media_object": "$O$"
                     },
                     "memory": null,
-                    "reason": "Select one playlist from JSON list"
+                    "reason": "Enqueue the music"
                 },
                 {
                     "tool_name": "llm_parse_json",
                     "args": {
-                        "query": "What colour best describes this music playlist. Answer one word only.\n$O$",
-                        "json_object": "$O$",
+                        "query": "Select best ambient light colour to listen to indie music from choices bellow",
+                        "json_object": [
+                            "beige",
+                            "blue",
+                            "cyan",
+                            "green",
+                            "orange",
+                            "red",
+                            "white",
+                            "yellow"
+                        ],
                         "return_type": "string"
                     },
                     "memory": "C",
-                    "reason": "Pick color to describe the picked playlist"
+                    "reason": "Select the best ambient light colour"
                 },
                 {
                     "tool_name": "set_ambient_light",
@@ -3026,7 +2920,7 @@
                         "light_color": "$C$"
                     },
                     "memory": null,
-                    "reason": "Set color inside the car"
+                    "reason": "Set the ambient light to the selected colour"
                 }
             ]
         ]
@@ -3041,25 +2935,26 @@
                         "query": null
                     },
                     "memory": "U",
-                    "reason": "Get information about weather outside"
+                    "reason": "Get the weather report"
                 },
                 {
                     "tool_name": "get_car_state",
                     "args": null,
                     "memory": "O",
-                    "reason": "Get car state for temperature information"
+                    "reason": "Get the car state"
                 },
                 {
                     "tool_name": "llm_parse_json",
                     "args": {
                         "query": "Return interior temperature as int",
-                        "data": "$O$",
+                        "json_object": "$O$",
                         "return_type": "string"
                     },
-                    "memory": "T"
+                    "memory": "$T$",
+                    "reason": "Get the interior temperature"
                 },
                 {
-                    "condition": "Temperature $T$ is higher than $U$",
+                    "condition": "Temperature $T$ is higher than one outside $U$",
                     "tools": [
                         {
                             "tool_name": "set_window",
@@ -3068,7 +2963,7 @@
                                 "what_window": "ALL"
                             },
                             "memory": null,
-                            "reason": "Hotter outside, open the window half"
+                            "reason": "Open the windows"
                         }
                     ]
                 }
@@ -3078,7 +2973,7 @@
                     "tool_name": "get_car_state",
                     "args": null,
                     "memory": "O",
-                    "reason": "Get car state for temperature information"
+                    "reason": "Get the car state"
                 },
                 {
                     "tool_name": "weather_tool",
@@ -3086,19 +2981,10 @@
                         "query": null
                     },
                     "memory": "U",
-                    "reason": "Get information about weather outside"
+                    "reason": "Get the weather report"
                 },
                 {
-                    "tool_name": "llm_parse_json",
-                    "args": {
-                        "query": "Return interior temperature as int",
-                        "data": "$O$",
-                        "return_type": "string"
-                    },
-                    "memory": "T"
-                },
-                {
-                    "condition": "Temperature $T$ is higher than $U$",
+                    "condition": "Temperature $O$ is higher than $U$",
                     "tools": [
                         {
                             "tool_name": "set_window",
@@ -3107,7 +2993,7 @@
                                 "what_window": "ALL"
                             },
                             "memory": null,
-                            "reason": "Hotter outside, open the window half"
+                            "reason": "Open the windows"
                         }
                     ]
                 }
@@ -3122,7 +3008,7 @@
                     "tool_name": "get_car_state",
                     "args": null,
                     "memory": "S",
-                    "reason": "Get car state for window information"
+                    "reason": "Get the car state"
                 },
                 {
                     "tool_name": "speak_user",
@@ -3131,7 +3017,7 @@
                         "data": "$S$"
                     },
                     "memory": null,
-                    "reason": "Tell user about car state"
+                    "reason": "Tell user about the windows"
                 }
             ]
         ]
@@ -3146,7 +3032,7 @@
                         "query": "rome city"
                     },
                     "memory": "A",
-                    "reason": "Get current weather state"
+                    "reason": "Get the weather report"
                 },
                 {
                     "tool_name": "speak_user",
@@ -3155,7 +3041,7 @@
                         "data": "$A$"
                     },
                     "memory": null,
-                    "reason": "Tell user how weather is in Rome"
+                    "reason": "Tell user about the weather"
                 }
             ]
         ]
@@ -3170,7 +3056,7 @@
                         "query": "madrid city"
                     },
                     "memory": "TR",
-                    "reason": "Get weather in Madrid"
+                    "reason": "Get the weather report"
                 },
                 {
                     "condition": "Based on this data, does it rain: $TR$",
@@ -3182,7 +3068,7 @@
                                 "data": null
                             },
                             "memory": null,
-                            "reason": "It rains in madrid, inform user"
+                            "reason": "Tell user about the weather"
                         }
                     ]
                 },
@@ -3195,16 +3081,27 @@
                                 "query": "madrid city center"
                             },
                             "memory": "NAV",
-                            "reason": "geocode madrid to address"
+                            "reason": "Get the address of Madrid"
+                        },
+                        {
+                            "tool_name": "llm_parse_json",
+                            "args": {
+                                "query": "Get address from object and return it",
+                                "json_object": "$NAV$",
+                                "return_type": "string"
+                            },
+                            "memory": "NAV_ADDR",
+                            "reason": "Get the address of Madrid"
                         },
                         {
                             "tool_name": "set_navigation",
                             "args": {
                                 "waypoints": [
-                                    "$NAV$"
+                                    "$NAV_ADDR$"
                                 ]
                             },
-                            "reason": "Navigate to madrid"
+                            "memory": null,
+                            "reason": "Navigate to Madrid"
                         }
                     ]
                 }
@@ -3216,7 +3113,7 @@
                         "query": "madrid city"
                     },
                     "memory": "TR",
-                    "reason": "Get weather in Madrid"
+                    "reason": "Get the weather report"
                 },
                 {
                     "condition": "Weather in this report is sunny $TR$",
@@ -3227,16 +3124,27 @@
                                 "query": "madrid city center"
                             },
                             "memory": "NAV",
-                            "reason": "geocode madrid to address"
+                            "reason": "Get the address of Madrid"
+                        },
+                        {
+                            "tool_name": "llm_parse_json",
+                            "args": {
+                                "query": "Get address from object and return it",
+                                "json_object": "$NAV$",
+                                "return_type": "string"
+                            },
+                            "memory": "NAV_ADDR",
+                            "reason": "Get the address of Madrid"
                         },
                         {
                             "tool_name": "set_navigation",
                             "args": {
                                 "waypoints": [
-                                    "$NAV$"
+                                    "$NAV_ADDR$"
                                 ]
                             },
-                            "reason": "Navigate to madrid"
+                            "memory": null,
+                            "reason": "Navigate to Madrid"
                         }
                     ]
                 },
@@ -3250,7 +3158,7 @@
                                 "data": null
                             },
                             "memory": null,
-                            "reason": "Rains in madrid, tell driver"
+                            "reason": "Tell user about the weather"
                         }
                     ]
                 }
@@ -3267,7 +3175,7 @@
                         "query": "what is wikipedia?"
                     },
                     "memory": "W",
-                    "reason": "Search internet for more info"
+                    "reason": "Search for wikipedia"
                 },
                 {
                     "tool_name": "speak_user",
@@ -3276,7 +3184,7 @@
                         "data": "$W$"
                     },
                     "memory": null,
-                    "reason": "Tell user about found info"
+                    "reason": "Tell user about wikipedia"
                 }
             ]
         ]
@@ -3291,7 +3199,7 @@
                         "query": "what is philosophy?"
                     },
                     "memory": "W",
-                    "reason": "Search internet for more info"
+                    "reason": "Search for philosophy"
                 },
                 {
                     "tool_name": "speak_user",
@@ -3300,7 +3208,7 @@
                         "data": "$W$"
                     },
                     "memory": null,
-                    "reason": "Tell user about found info"
+                    "reason": "Tell user about philosophy"
                 }
             ]
         ]
@@ -3317,7 +3225,7 @@
                         "search_range": 10
                     },
                     "memory": "SR",
-                    "reason": "Search for vegan restaurants"
+                    "reason": "Find vegan restaurants in 10 km range"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -3327,7 +3235,7 @@
                         "return_type": "string"
                     },
                     "memory": "X",
-                    "reason": "Pick closest and cheapest restaurant"
+                    "reason": "Get the address of the cheapest vegan restaurant"
                 },
                 {
                     "tool_name": "set_navigation",
@@ -3337,7 +3245,7 @@
                         ]
                     },
                     "memory": null,
-                    "reason": "Navigate to found restaurant"
+                    "reason": "Navigate to the restaurant"
                 }
             ]
         ]
@@ -3351,7 +3259,8 @@
                     "args": {
                         "volume": 10
                     },
-                    "reason": "Lower volume of media"
+                    "memory": null,
+                    "reason": "Mute the volume"   
                 }
             ]
         ]
@@ -3366,7 +3275,7 @@
                         "query": "berlin city"
                     },
                     "memory": "N",
-                    "reason": "Reverse geocode berlin city center"
+                    "reason": "Get the address of Berlin"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -3376,7 +3285,7 @@
                         "return_type": "string"
                     },
                     "memory": "N_ADDR",
-                    "reason": "Get address from geocoded place"
+                    "reason": "Get the address of Berlin"
                 },
                 {
                     "tool_name": "set_navigation",
@@ -3386,17 +3295,16 @@
                         ]
                     },
                     "memory": null,
-                    "reason": "Navigate to city center berlin"
+                    "reason": "Navigate to Berlin"
                 },
                 {
                     "tool_name": "places_tool",
                     "args": {
                         "query": "cafe",
-                        "location": "$N_ADDR$",
-                        "search_range": 10
+                        "location": "$N_ADDR$"
                     },
                     "memory": "WHAT",
-                    "reason": "Search for cafes in berlin center"
+                    "reason": "Find cafe in Berlin"
                 },
                 {
                     "tool_name": "speak_user",
@@ -3405,7 +3313,7 @@
                         "data": "$WHAT"
                     },
                     "memory": null,
-                    "reason": "Tell user about the cafes found"
+                    "reason": "Tell user about the cafe"
                 }
             ],
             [
@@ -3415,7 +3323,7 @@
                         "query": "berlin city"
                     },
                     "memory": "N",
-                    "reason": "Reverse geocode berlin city center"
+                    "reason": "Get the address of Berlin"
                 },
                 {
                     "tool_name": "llm_parse_json",
@@ -3425,17 +3333,16 @@
                         "return_type": "string"
                     },
                     "memory": "N_ADDR",
-                    "reason": "Get address from geocoded place"
+                    "reason": "Get the address of Berlin"
                 },
                 {
                     "tool_name": "places_tool",
                     "args": {
                         "query": "cafe",
-                        "location": "$N_ADDR$",
-                        "search_range": 10
+                        "location": "$N_ADDR$"
                     },
                     "memory": "WHAT",
-                    "reason": "Search for cafes in berlin center"
+                    "reason": "Find cafe in Berlin"
                 },
                 {
                     "tool_name": "speak_user",
@@ -3444,7 +3351,7 @@
                         "data": "$WHAT"
                     },
                     "memory": null,
-                    "reason": "Tell user about the cafes found"
+                    "reason": "Tell user about the cafe"
                 },
                 {
                     "tool_name": "set_navigation",
@@ -3454,7 +3361,7 @@
                         ]
                     },
                     "memory": null,
-                    "reason": "Navigate to city center berlin"
+                    "reason": "Navigate to Berlin"
                 }
             ]
         ]
@@ -3469,7 +3376,7 @@
                         "query": "what is best cafe in Rome?"
                     },
                     "memory": "BCRJ",
-                    "reason": "Look up external information"
+                    "reason": "Search for best cafe in Rome"
                 },
                 {
                     "tool_name": "speak_user",
@@ -3478,7 +3385,7 @@
                         "data": "$BCRJ$"
                     },
                     "memory": null,
-                    "reason": "Report back to user"
+                    "reason": "Tell user about the cafe"
                 },
                 {
                     "tool_name": "media_control_volume",
@@ -3496,7 +3403,7 @@
                         "query": "what is best cafe in Rome?"
                     },
                     "memory": "BCRJ",
-                    "reason": "Look up external information"
+                    "reason": "Search for best cafe in Rome"
                 },
                 {
                     "tool_name": "media_control_volume",
@@ -3513,7 +3420,7 @@
                         "data": "$BCRJ$"
                     },
                     "memory": null,
-                    "reason": "Talk to user"
+                    "reason": "Tell user about the cafe"
                 }
             ]
         ]
@@ -3528,7 +3435,7 @@
                         "query": null
                     },
                     "memory": "WEATHER",
-                    "reason": "Check weather outside"
+                    "reason": "Get the weather report"
                 },
                 {
                     "condition": "Weather is sunny in report $WEATHER$",
@@ -3537,11 +3444,10 @@
                             "tool_name": "places_tool",
                             "args": {
                                 "query": "cafe",
-                                "search_mode": "near_current_location",
-                                "search_range": 10
+                                "search_mode": "near_current_location"
                             },
                             "memory": "PLACES",
-                            "reason": "Sunny outside, look up caffess nearby"
+                            "reason": "Find cafe near current location"
                         },
                         {
                             "tool_name": "llm_parse_json",
@@ -3551,7 +3457,7 @@
                                 "return_type": "object"
                             },
                             "memory": "BEST_PLACE",
-                            "reason": "Parse best caffee from return"
+                            "reason": "Get the best cafe"
                         },
                         {
                             "tool_name": "llm_parse_json",
@@ -3561,7 +3467,7 @@
                                 "return_type": "string"
                             },
                             "memory": "PLACE_ADDRESS",
-                            "reason": "Get address of caffee from last parse"
+                            "reason": "Get the address of the cafe"
                         },
                         {
                             "tool_name": "speak_user",
@@ -3570,7 +3476,7 @@
                                 "data": "$PLACE_ADDRESS$"
                             },
                             "memory": null,
-                            "reason": "Inform user a cafe has been identified"
+                            "reason": "Tell user about the cafe"
                         },
                         {
                             "tool_name": "set_navigation",
@@ -3580,7 +3486,7 @@
                                 ]
                             },
                             "memory": null,
-                            "reason": "Navigate to cafe"
+                            "reason": "Navigate to the cafe"
                         }
                     ]
                 },
@@ -3591,11 +3497,10 @@
                             "tool_name": "places_tool",
                             "args": {
                                 "query": "restaurant",
-                                "search_mode": "near_current_location",
-                                "search_range": 10
+                                "search_mode": "near_current_location"
                             },
                             "memory": "PLACES",
-                            "reason": "Rainy outside, find a restaurant"
+                            "reason": "Find restaurant near current location"
                         },
                         {
                             "tool_name": "llm_parse_json",
@@ -3605,7 +3510,7 @@
                                 "return_type": "object"
                             },
                             "memory": "BEST_PLACE",
-                            "reason": "Select one restaurant from list"
+                            "reason": "Get the best restaurant"
                         },
                         {
                             "tool_name": "llm_parse_json",
@@ -3615,7 +3520,7 @@
                                 "return_type": "string"
                             },
                             "memory": "PLACE_ADDRESS",
-                            "reason": "Get address of restaurant"
+                            "reason": "Get the address of the restaurant"
                         },
                         {
                             "tool_name": "speak_user",
@@ -3624,7 +3529,7 @@
                                 "data": "$PLACE_ADDRESS$"
                             },
                             "memory": null,
-                            "reason": "Tell user about selected restaurant"
+                            "reason": "Tell user about the restaurant"
                         },
                         {
                             "tool_name": "set_navigation",
@@ -3634,7 +3539,7 @@
                                 ]
                             },
                             "memory": null,
-                            "reason": "Navigate to restaurant"
+                            "reason": "Navigate to the restaurant"
                         }
                     ]
                 }

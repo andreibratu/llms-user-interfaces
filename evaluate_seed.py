@@ -17,7 +17,7 @@ if __name__ == "__main__":
     LLM = OpenAILLM("gpt-3.5-turbo-0125")
     SESSION.ORACLE = LLM
 
-    for mode in APP_CONFIG.experiment.plan_output_mode:
+    for mode in ["json+r"]:
         seed_planner = SeedPlanner(LLM, mode)
         dataset = read_seed_dataset(mode)
 
