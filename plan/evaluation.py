@@ -1,22 +1,21 @@
 import difflib
-from functools import cached_property
 import json
 import string
-import nltk
 from collections import Counter
+from functools import cached_property
 from math import floor
 from statistics import mean
 from typing import Any, ClassVar, Dict, List, Optional, OrderedDict, Tuple, Union
 from uuid import uuid4
 
-from nltk.stem import PorterStemmer
+import nltk
 from Levenshtein import ratio as levenshtein_ratio
+from nltk.stem import PorterStemmer
 from pydantic import BaseModel, computed_field
 
 from car_state import CarState
 from domain import PlanFormat
 from plan.domain import PlanStep
-
 
 nltk.download('stopwords')
 

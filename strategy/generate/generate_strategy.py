@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from car_state import CarState
 from dataset.read_seed import read_seed_dataset
-from util import shorten_string_values
 from domain import Metadata, PlanFormat
 from llm.base import LLMInterface, LLMMessage
 from plan.domain import PlanStep, PlanType, Transition
@@ -19,6 +18,7 @@ from strategy.notification import (
     StrategyNotification,
 )
 from tool.tools import TOOL_SCHEMA
+from util import shorten_string_values
 
 LLMErrorFeedbackStrategyType = Literal[
     "NO_FEEDBACK",

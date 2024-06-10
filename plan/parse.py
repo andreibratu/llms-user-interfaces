@@ -60,7 +60,7 @@ def parse_gml_llm_plan(llm_text: str, tokens: int = 0) -> PlanType:
     except nx.NetworkXNoCycle:
         id_to_planstep: Dict[int, PlanStep] = {}
         for node_id in nx.topological_sort(plan_graph):
-            raw_node_text = re.search(rf"node \[ id {node_id} [^]]+ \]", llm_text)
+            raw_node_text = re.search(rf"node \[ id {node_id} .+? \]", llm_text)
             assert raw_node_text, "A node included in the plan should be found text"
             # pylint: disable=protected-access
             node_metadata: Dict[str, Any] = plan_graph._node[node_id]
@@ -70,6 +70,8 @@ def parse_gml_llm_plan(llm_text: str, tokens: int = 0) -> PlanType:
                     continue
                 if v == "null":
                     args[k] = None
+                elif v in ["true", "false"]:
+                    args[k] = v == "true"
                 else:
                     args[k] = v
             if len(args) == 0:

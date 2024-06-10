@@ -1061,7 +1061,7 @@
             {
                "tool_name": "llm_parse_json",
                "args": {
-                  "query": "Identify three closest places and return a JSON list of their addresseses",
+                  "query": "Identify three closest places and return a JSON list of their addresses",
                   "json_object": "$NATURE_PLACES$",
                   "return_type": "object"
                },

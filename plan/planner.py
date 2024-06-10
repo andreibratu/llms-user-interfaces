@@ -18,6 +18,7 @@ from plan.domain import (
     PlanSuccessExecutorNotification,
     PlanType,
 )
+from plan.evaluation import QueryAttempt, QueryEvaluation
 from plan.exceptions import MisgeneratedPlanException
 from plan.feedback import (
     ExecutorFailureFeedback,
@@ -26,7 +27,6 @@ from plan.feedback import (
     ExecutorRunBranch,
 )
 from plan.parse import llm_text_to_json, parse_gml_llm_plan, parse_json_llm_plan
-from plan.evaluation import QueryAttempt, QueryEvaluation
 from strategy.generate.generate_strategy import GenerateStrategy
 from strategy.notification import (
     ExceptionNotification,
