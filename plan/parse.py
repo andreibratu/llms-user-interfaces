@@ -26,85 +26,6 @@ def llm_text_to_json(llm_text: str) -> Optional[Union[List[Dict], Dict]]:
         raise ValueError("Could not parse JSON from text") from e
 
 
-def parse_gml_llm_plan(llm_text: str, tokens: int = 0) -> PlanType:
-    llm_text = llm_text.strip()
-    glm_text = re.search(r"graph \[.*\]", llm_text)
-    if glm_text is None:
-        raise MisgeneratedPlanException(
-            code=24,
-            message="Plan cannot be parsed as a GML",
-            output=llm_text,
-            tokens=tokens,
-        )
-    try:
-        plan_graph: nx.Graph = nx.parse_gml(llm_text, label=None)
-    except nx.NetworkXError as e:
-        raise MisgeneratedPlanException(
-            code=24,
-            message="Plan cannot be parsed as a GML",
-            output=llm_text,
-            tokens=tokens,
-        ) from e
-    if not plan_graph.is_directed():
-        raise MisgeneratedPlanException(
-            code=46,
-            message="GLM plan misses the 'directed 1' directive",
-            output=llm_text,
-            tokens=tokens,
-        )
-    try:
-        _ = nx.find_cycle(plan_graph)
-        raise MisgeneratedPlanException(
-            code=47, message="GLM graph contains cycles", output=llm_text, tokens=tokens
-        )
-    except nx.NetworkXNoCycle:
-        id_to_planstep: Dict[int, PlanStep] = {}
-        for node_id in nx.topological_sort(plan_graph):
-            raw_node_text = re.search(rf"node \[ id {node_id} .+? \]", llm_text)
-            assert raw_node_text, "A node included in the plan should be found text"
-            # pylint: disable=protected-access
-            node_metadata: Dict[str, Any] = plan_graph._node[node_id]
-            args = {}
-            for k, v in node_metadata.items():
-                if k in ["function", "reason"]:
-                    continue
-                if v == "null":
-                    args[k] = None
-                elif v in ["true", "false"]:
-                    args[k] = v == "true"
-                else:
-                    args[k] = v
-            if len(args) == 0:
-                args = None
-
-            id_to_planstep[node_id] = PlanStep(
-                tool_name=node_metadata["function"],
-                args=args,
-                raw_plan_text=raw_node_text.group(),
-                memory=str(node_id),
-                reason=node_metadata.get("reason"),
-            )
-        plan: PlanType = []
-        visited: Set[int] = set()
-        for node_id in nx.topological_sort(plan_graph):
-            if node_id in visited:
-                continue
-            visited.add(node_id)
-            plan.append(id_to_planstep[node_id])
-            for _, nnode, edge_metadata in plan_graph.edges(node_id, data=True):
-                if "condition" in edge_metadata:
-                    # Gather all nodes from the conditional branch and put them in a sublist
-                    branch_first_step = id_to_planstep[nnode]
-                    branch_first_step.evaluate_condition = edge_metadata["condition"]
-                    branch = [branch_first_step]
-                    visited.add(nnode)
-                    for _, branch_nnode_id in nx.dfs_edges(plan_graph, nnode):
-                        visited.add(branch_nnode_id)
-                        branch.append(id_to_planstep[branch_nnode_id])
-                    plan.append(branch)
-        return plan
-
-
 def parse_json_llm_plan(llm_text: str, tokens: int = 0) -> PlanType:
     try:
         parsed_json = llm_text_to_json(llm_text)
@@ -162,3 +83,98 @@ def parse_json_llm_plan(llm_text: str, tokens: int = 0) -> PlanType:
             output=llm_text,
             tokens=tokens,
         ) from e
+
+
+def parse_gml_llm_plan(llm_text: str, tokens: int = 0) -> PlanType:
+    plan_graph = _gml_to_nx_graph(llm_text, tokens)
+    id_to_planstep: Dict[int, PlanStep] = _parse_steps_from_graph(llm_text, plan_graph)
+    return _topological_sort_plan_steps(id_to_planstep, plan_graph)
+
+
+def _gml_to_nx_graph(llm_text: str, tokens: int) -> nx.Graph:
+    llm_text = llm_text.strip()
+    glm_text = re.search(r"graph \[.*\]", llm_text)
+    if glm_text is None:
+        raise MisgeneratedPlanException(
+            code=24,
+            message="Plan cannot be parsed as a GML",
+            output=llm_text,
+            tokens=tokens,
+        )
+    try:
+        plan_graph: nx.Graph = nx.parse_gml(llm_text, label=None)
+    except nx.NetworkXError as e:
+        raise MisgeneratedPlanException(
+            code=24,
+            message="Plan cannot be parsed as a GML",
+            output=llm_text,
+            tokens=tokens,
+        ) from e
+    if not plan_graph.is_directed():
+        raise MisgeneratedPlanException(
+            code=46,
+            message="GLM plan misses the 'directed 1' directive",
+            output=llm_text,
+            tokens=tokens,
+        )
+    try:
+        _ = nx.find_cycle(plan_graph)
+        raise MisgeneratedPlanException(
+            code=47, message="GLM graph contains cycles", output=llm_text, tokens=tokens
+        )
+    except nx.NetworkXNoCycle:
+        return plan_graph
+
+
+def _parse_steps_from_graph(llm_text: str, plan_graph: nx.Graph) -> Dict[int, PlanStep]:
+    id_to_planstep: Dict[int, PlanStep] = {}
+    for node_id in nx.topological_sort(plan_graph):
+        raw_node_text = re.search(rf"node \[ id {node_id} .+? \]", llm_text)
+        assert raw_node_text, "A node included in the plan should be found text"
+        # pylint: disable=protected-access
+        node_metadata: Dict[str, Any] = plan_graph._node[node_id]
+        args = {}
+        for k, v in node_metadata.items():
+            if k in ["function", "reason"]:
+                continue
+            if v == "null":
+                args[k] = None
+            elif v in ["true", "false"]:
+                args[k] = v == "true"
+            else:
+                args[k] = v
+        if len(args) == 0:
+            args = None
+
+        id_to_planstep[node_id] = PlanStep(
+            tool_name=node_metadata["function"],
+            args=args,
+            raw_plan_text=raw_node_text.group(),
+            memory=str(node_id),
+            reason=node_metadata.get("reason"),
+        )
+    return id_to_planstep
+
+
+def _topological_sort_plan_steps(
+    id_to_planstep: Dict[int, PlanStep], plan_graph: nx.Graph
+):
+    plan: PlanType = []
+    visited: Set[int] = set()
+    for node_id in nx.topological_sort(plan_graph):
+        if node_id in visited:
+            continue
+        visited.add(node_id)
+        plan.append(id_to_planstep[node_id])
+        for _, nnode, edge_metadata in plan_graph.edges(node_id, data=True):
+            if "condition" in edge_metadata:
+                # Gather all nodes from the conditional branch and put them in a sublist
+                branch_first_step = id_to_planstep[nnode]
+                branch_first_step.evaluate_condition = edge_metadata["condition"]
+                branch = [branch_first_step]
+                visited.add(nnode)
+                for _, branch_nnode_id in nx.dfs_edges(plan_graph, nnode):
+                    visited.add(branch_nnode_id)
+                    branch.append(id_to_planstep[branch_nnode_id])
+                plan.append(branch)
+    return plan

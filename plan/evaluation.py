@@ -5,8 +5,7 @@ from collections import Counter
 from functools import cached_property
 from math import floor
 from statistics import mean
-from typing import Any, ClassVar, Dict, List, Optional, OrderedDict, Tuple, Union
-from uuid import uuid4
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
 
 import nltk
 from Levenshtein import ratio as levenshtein_ratio
@@ -17,11 +16,12 @@ from car_state import CarState
 from domain import PlanFormat
 from plan.domain import PlanStep
 
-nltk.download('stopwords')
+nltk.download("stopwords")
+
 
 def summarise_car_state_for_alignment(
     car_state: Dict[str, Any],
-    skip_list: List[str] = ["home_address", "current_address"],
+    skip_list: Tuple[str] = ("home_address", "current_address"),
 ) -> Dict[str, Any]:
     def _simplify_string(text: str) -> List[str]:
         stopwords = set(nltk.corpus.stopwords.words("english"))
@@ -102,7 +102,7 @@ class QueryEvaluation(BaseModel):
     @cached_property
     def alignment_outcome_delta(self) -> Optional[str]:
         """Compute Git-style difference between predicted outcome and actual car state.
-        
+
         "minus" lines indicate a value present in prediction but not in real outocme
         """
         if (
@@ -337,11 +337,11 @@ class LLMPlannerResult(BaseModel):
         """
         alignment_scores = []
         alignment_scores_success = []
-        for eval in self.query_evaluations:
-            if eval.alignment_score is not None:
-                if eval.success:
-                    alignment_scores_success.append(eval.alignment_score)
-                alignment_scores.append(eval.alignment_score)
+        for q_eval in self.query_evaluations:
+            if q_eval.alignment_score is not None:
+                if q_eval.success:
+                    alignment_scores_success.append(q_eval.alignment_score)
+                alignment_scores.append(q_eval.alignment_score)
         if len(alignment_scores) == 0:
             return {"mean_alignment_all": None, "mean_alignment_success": None}
         return {

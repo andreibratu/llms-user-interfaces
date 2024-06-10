@@ -5,7 +5,7 @@ from typing import Dict, List
 
 def read_seed_dataset(plan_format: str) -> Dict[str, List[str]]:
     query_plan: Dict[str, List[str]] = {}
-    data_dir = Path(__file__).parent.parent.joinpath("data")
+    data_dir = Path(__file__).parent.parent.joinpath("data").joinpath("seed_datasets")
 
     if plan_format in ("json", "json+r"):
         ds_path = {

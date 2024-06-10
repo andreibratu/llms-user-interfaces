@@ -389,7 +389,7 @@ class LLMPlanner(PlannerInterface):
             self._notify_strategies(PlanFailureStrategyNotification())
         yield (
             PlanSuccessExecutorNotification()
-            if self._evaluation.success
+            if self._evaluation.success()
             else PlanFailureExecutorNotification()
         )
 

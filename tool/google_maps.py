@@ -113,5 +113,7 @@ def distance_matrix(
                 }
 
         return all_distances
-    except KeyError:
-        raise ValueError("Could not locate either one of the origin or destination points")
+    except KeyError as e:
+        raise ValueError(
+            "Could not locate either one of the origin or destination points"
+        ) from e

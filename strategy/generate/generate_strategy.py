@@ -1,7 +1,7 @@
 import difflib
 import json
 import random
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Dict, List, Literal, Optional, Tuple
 
 from car_state import CarState
 from dataset.read_seed import read_seed_dataset

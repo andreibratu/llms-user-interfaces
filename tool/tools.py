@@ -288,7 +288,7 @@ def set_navigation(waypoints: Union[List[str], str]) -> JSONType:
         try:
             # Might be stringified when stored in memory
             waypoints = json.loads(waypoints)
-        except json.JSONDecodeError as e:
+        except json.JSONDecodeError:
             # Leave value as it is
             waypoints = [waypoints]
     SESSION.CAR_STATE.destination_waypoints = waypoints
@@ -308,7 +308,7 @@ def add_navigation(waypoints: Union[List[str], str]) -> JSONType:
         try:
             # Might be stringified when stored in memory
             waypoints = json.loads(waypoints)
-        except json.JSONDecodeError as e:
+        except json.JSONDecodeError:
             # Leave value as it is
             waypoints = [waypoints]
     SESSION.CAR_STATE.destination_waypoints.extend(waypoints)
@@ -376,7 +376,7 @@ def weather_tool(query: Optional[str] = None):
         86: "heavy_snow_shower",
         95: "thunderstorm",
         96: "thunderstorm_slight_hail",
-        97: "thunderstorm_heavy_hail"
+        97: "thunderstorm_heavy_hail",
     }
 
     query_params = {
@@ -386,11 +386,9 @@ def weather_tool(query: Optional[str] = None):
             "apparent_temperature,precipitation_probability,precipitation,"
             "weather_code,cloud_cover,snowfall"
         ),
-        "daily": (
-            "weather_code,sunrise,sunset"
-        ),
+        "daily": ("weather_code,sunrise,sunset"),
         "timezone": timezone,
-        "forecast_days": 3
+        "forecast_days": 3,
     }
     response = requests.get(
         "https://api.open-meteo.com/v1/forecast",
@@ -398,16 +396,25 @@ def weather_tool(query: Optional[str] = None):
     )
     report = response.json()
     # Discard redundant keys
-    for k in ["latitude", "longitude", "timezone", "generationtime_ms", "utc_offset_seconds", "timezone_abbreviation", "current_units", "daily_units",]:
+    for k in [
+        "latitude",
+        "longitude",
+        "timezone",
+        "generationtime_ms",
+        "utc_offset_seconds",
+        "timezone_abbreviation",
+        "current_units",
+        "daily_units",
+    ]:
         if k in report:
             del report[k]
-    for k, values in report['hourly'].items():
+    for k, values in report["hourly"].items():
         # Discard hours to keep the report token efficient
-        report['hourly'][k] = values[::6]
-    for time_period in ['hourly', 'daily']:
-        report[time_period]['weather_code'] = [
+        report["hourly"][k] = values[::6]
+    for time_period in ["hourly", "daily"]:
+        report[time_period]["weather_code"] = [
             weather_code_mapping.get(code, code)
-            for code in report[time_period]['weather_code']
+            for code in report[time_period]["weather_code"]
         ]
     return json.dumps(report)
 
@@ -469,7 +476,7 @@ def llm_parse_json(
             if all(isinstance(item, dict) and len(item) == 1 for item in json_output):
                 output = [list(item.values())[0] for item in json_output]
         output = json.dumps(output)
-    except json.JSONDecodeError as e:
+    except json.JSONDecodeError:
         pass
 
     return output
@@ -488,6 +495,7 @@ def _get_access_token():
         timeout=5,
     )
     return response.json()["access_token"]
+
 
 @TOOL_CACHE.cache
 @retry(
@@ -511,11 +519,10 @@ def media_search(query: str, types: List[SpotifySearch]) -> JSONType:
     response = requests.get(
         "https://api.spotify.com/v1/search",
         headers={"Authorization": f"Bearer {_get_access_token()}"},
-        params={"q": query, "type": ",".join(types), 'limit': 2},
+        params={"q": query, "type": ",".join(types), "limit": 2},
     )
 
     return response.json()
-    
 
 
 @TOOL_CACHE.cache
@@ -734,7 +741,10 @@ TOOL_SCHEMA = [
     {
         "name": "add_navigation",
         "role": "consumer",
-        "description": "Add new waypoints to car navigation at the end. Returns ETAs to each of them from current location",
+        "description": (
+            "Add new waypoints to car navigation at the end. "
+            "Returns ETAs to each of them from current location"
+        ),
         "args": {
             "waypoints": {
                 "required": True,

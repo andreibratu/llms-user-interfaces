@@ -50,6 +50,7 @@ def google_search(query: str) -> List[Dict]:
 
 
 def internet_scrape(topic: str) -> str:
+    # pylint: disable=global-statement
     global _SELENIUM_WORKERS
     _SELENIUM_WORKERS = [webdriver.Chrome(options=_OPTIONS) for _ in range(_WORKERS)]
 
