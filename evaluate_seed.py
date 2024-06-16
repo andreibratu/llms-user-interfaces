@@ -1,10 +1,7 @@
-import itertools
 import json
 import os
-import random
-import re
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict
 
 import tqdm
 from joblib import hash as joblib_hash
@@ -16,23 +13,6 @@ from llm.openai import OpenAILLM
 from plan.evaluation import QueryEvaluation
 from plan.executor import solve_query
 from plan.planner import SeedPlanner
-
-
-def _data_augmentation_gml_modes(gml_plan: str, augment_count: int = 10) -> List[str]:
-    all_nodes = re.findall(r"node \[.+?\]", gml_plan)
-    all_edges = re.findall(r"edge \[.+?\]", gml_plan)
-
-    building_blocks = [*all_nodes, *all_edges]
-    random.shuffle(building_blocks)
-
-    output = []
-    for perm in itertools.islice(
-        itertools.permutations(building_blocks), augment_count
-    ):
-        output.append(f'graph [ directed 1 {" ".join(perm)}]')
-
-    return output
-
 
 if __name__ == "__main__":
     LLM = OpenAILLM("gpt-3.5-turbo-0125")

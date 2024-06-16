@@ -8,7 +8,6 @@ import tqdm
 
 import session as SESSION
 from configuration import APP_CONFIG
-from constants import DEFAULT_PLANNER_LLM_HYPERS
 from database import planner_evaluated, write_metrics
 from dataset.instructions import generate_instructions
 from llm.base import LLMInterface
@@ -16,6 +15,7 @@ from llm.openai import OpenAILLM
 from plan.evaluation import LLMPlannerResult
 from plan.executor import solve_query
 from plan.planner import LLMPlanner, QueryEvaluation
+from prompts import DEFAULT_LLM_HYPERS
 from strategy.generate.generate_blind import GenerateBlindOffline
 from strategy.generate.generate_graph import GenerateGraphOnline
 from strategy.generate.generate_strategy import GenerateStrategy
@@ -49,7 +49,7 @@ for llm, wp, num_dems, feedback_strategy, use_align_pred in itertools.product(
 ):
     init_args = {
         "planner_llm": llm,
-        "llm_hypers": DEFAULT_PLANNER_LLM_HYPERS,
+        "llm_hypers": DEFAULT_LLM_HYPERS,
         "err_feedback_strategy": feedback_strategy,
         "wire_producers": wp,
         "num_examples_system": num_dems,
@@ -76,7 +76,7 @@ for llm, wp, num_dems, feedback_strategy, use_align_pred in itertools.product(
 # ):
 #     init_args = {
 #         "planner_llm": llm,
-#         "llm_hypers": DEFAULT_PLANNER_LLM_HYPERS,
+#         "llm_hypers": DEFAULT_LLM_HYPERS,
 #         "err_feedback_strategy": feedback_strategy,
 #         "num_demonstrations": num_dems,
 #         "use_alignment_prediction": use_align_pred,
@@ -103,7 +103,7 @@ for llm, wp, num_dems, feedback_strategy, use_align_pred in itertools.product(
 _GENERATE_STRATEGIES = [
     GenerateBlindOffline(
         planner_llm=_LLMS[0],
-        llm_hypers=DEFAULT_PLANNER_LLM_HYPERS,
+        llm_hypers=DEFAULT_LLM_HYPERS,
         num_demonstrations=10,
         err_feedback_strategy="ERROR_TYPE+STEP",
         use_alignment_prediction=True,
@@ -113,7 +113,7 @@ _GENERATE_STRATEGIES = [
     ),
     GenerateBlindOffline(
         planner_llm=_LLMS[0],
-        llm_hypers=DEFAULT_PLANNER_LLM_HYPERS,
+        llm_hypers=DEFAULT_LLM_HYPERS,
         num_demonstrations=10,
         err_feedback_strategy="ERROR_TYPE+STEP",
         use_alignment_prediction=True,

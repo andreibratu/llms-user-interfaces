@@ -8,6 +8,7 @@ from llm.base import LLMMessage
 from plan.domain import PlanStep, PlanType
 from plan.exceptions import MisgeneratedPlanException
 from plan.parse import parse_json_llm_plan
+from prompts import get_system_prompt
 from strategy.generate.generate_strategy import GenerateStrategy
 
 
@@ -91,7 +92,7 @@ class GenerateBabyAGI(GenerateStrategy):
 
     @overrides
     def _build_system_prompt(self) -> str:
-        base_sys_prompt = super()._build_system_prompt()
+        base_sys_prompt = get_system_prompt(self.plan_format)
         return base_sys_prompt + (
             "You will approach the query by mentaining a list of tasks. "
             "Each task can be subdivided into further natural language subtasks, or "

@@ -9,6 +9,7 @@ from domain import Metadata, PlanFormat
 from llm.base import LLMInterface, LLMMessage
 from plan.domain import PlanStep, PlanType, Transition
 from plan.exceptions import ExecutionException
+from prompts import get_system_prompt
 from strategy.base import PlannerStrategy
 from strategy.notification import (
     ExceptionNotification,
@@ -17,7 +18,6 @@ from strategy.notification import (
     OkStrategyNotification,
     StrategyNotification,
 )
-from tool.tools import TOOL_SCHEMA
 from util import shorten_string_values
 
 LLMErrorFeedbackStrategyType = Literal[
@@ -101,45 +101,6 @@ class GenerateStrategy(PlannerStrategy):
         """Amend the initial generation."""
         raise NotImplementedError
 
-    _BASE_PLAN_PROMPT_SYS = (
-        "You are a car assistant, using tools to satisfy a user query. "
-        f"The tools you have available are:\n{json.dumps(TOOL_SCHEMA, indent=1)}\n"
-    )
-
-    _JSON_LIST_PLAN_SYS = (
-        _BASE_PLAN_PROMPT_SYS
-        + "Tool calls are represented as JSON objects. Results stored "
-        "in memory can be called using the pattern $NAME_OF_MEMORY$ anywhere "
-        "in other function arguments and the stored value will be used "
-        "instead of the placeholder. "
-    )
-
-    _JSON_LIST_PLAN_W_REASON_SYS = (
-        _JSON_LIST_PLAN_SYS
-        + "You will give a reason why each tool call was made under the reason field"
-    )
-
-    _GML_PLAN_PROMPT_SYS = (
-        _BASE_PLAN_PROMPT_SYS
-        + "You will output the plan using GML direct graph notation. "
-        "Each node represent a function call and the edges indicate that "
-        "the result of one function call is required in another. "
-        "Results stored in memory can be called using the pattern $ID_FUNCTION_CALL$ "
-        "anywhere in other function arguments and the stored value will be used "
-        "instead of the placeholder. "
-    )
-
-    _GML_PLAN_REASON_PROMPT_SYS = (
-        _GML_PLAN_PROMPT_SYS
-        + " You will motivate on each node why that function "
-        + "call happened using a 'reason' attribute. "
-    )
-
-    _GML_PLAN_REASON_EDGE_PROMPT_SYS = (
-        _GML_PLAN_REASON_PROMPT_SYS
-        + " You will motivate the existence of each edge using a 'reason' attribute. "
-    )
-
     def _build_error_explain_prompt(self) -> str:
         if self.error_feedback_strategy == "NO_FEEDBACK":
             return ""
@@ -179,19 +140,10 @@ class GenerateStrategy(PlannerStrategy):
             )
         return "=====\nHere are some plan examples:\n=====\n" + "=====\n".join(output)
 
-    def _build_system_prompt(self) -> str:
-        return {
-            "json": self._JSON_LIST_PLAN_SYS,
-            "json+r": self._JSON_LIST_PLAN_W_REASON_SYS,
-            "gml": self._GML_PLAN_PROMPT_SYS,
-            "gml+r": self._GML_PLAN_REASON_PROMPT_SYS,
-            "gml+r+e": self._GML_PLAN_REASON_EDGE_PROMPT_SYS,
-        }[self.plan_format]
-
     def _build_init_messages(self) -> int:
         tokens = 0
         self._llm_chat = [
-            LLMMessage(role="system", content=self._build_system_prompt()),
+            LLMMessage(role="system", content=get_system_prompt(self.plan_format)),
             LLMMessage(
                 role="system",
                 content=f"Here are some examples:\n{self._prompt_n_examples()}",

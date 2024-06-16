@@ -7,6 +7,7 @@ from llm.base import LLMMessage
 from plan.domain import PlanStep
 from plan.exceptions import MisgeneratedPlanException
 from plan.parse import parse_json_llm_plan
+from prompts import get_system_prompt
 from strategy.generate.generate_strategy import GenerateStrategy
 from strategy.notification import NewQueryNotification, StrategyNotification
 
@@ -81,7 +82,7 @@ class GenerateReact(GenerateStrategy):
 
     @overrides
     def _build_system_prompt(self) -> str:
-        prompt = super()._build_system_prompt()
+        prompt = get_system_prompt(self.plan_format)
         prompt += (
             "You will generate the plan sovling the query step by step. "
             "At each step you will generate a Tought where you reason what "

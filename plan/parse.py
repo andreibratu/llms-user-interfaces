@@ -46,6 +46,7 @@ def parse_json_llm_plan(llm_text: str, tokens: int = 0) -> PlanType:
                 # Expecting conditional branch
                 step = [PlanStep.model_validate(tool) for tool in json_step["tools"]]
                 step[0].evaluate_condition = json_step["condition"]
+                step[0].raw_plan_text = json.dumps(json_step)
                 if len(json_step) == 0:
                     raise MisgeneratedPlanException(
                         code=48,

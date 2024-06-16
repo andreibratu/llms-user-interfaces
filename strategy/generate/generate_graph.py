@@ -12,6 +12,7 @@ from llm.base import LLMMessage
 from plan.domain import PlanStep, PlanType
 from plan.exceptions import MisgeneratedPlanException
 from plan.parse import parse_json_llm_plan
+from prompts import get_system_prompt
 from strategy.generate.generate_strategy import GenerateStrategy
 from strategy.notification import NewQueryNotification, StrategyNotification
 from tool import tools as TOOL_MODULE
@@ -62,7 +63,7 @@ class GenerateGraphAbstract(GenerateStrategy):
 
     @overrides
     def _build_system_prompt(self) -> str:
-        base_prompt = super()._build_system_prompt()
+        base_prompt = get_system_prompt(self.plan_format)
         return base_prompt + (
             "\nYou will be guided step by step on what tools you can call. "
             "You begin in START node, and you should go to END node "

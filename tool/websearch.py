@@ -80,6 +80,7 @@ def internet_scrape(topic: str) -> str:
                 "please do not scrape our pages",
                 "access_denied",
                 "we use cookies",
+                "on this server"
             ]
         )
     ]

@@ -7,7 +7,6 @@ from typing import Generator, List, Optional
 from pydantic import ValidationError
 
 from car_state import CarState
-from constants import DEFAULT_ORACLE_LLM_HYPERS
 from domain import Metadata, PlanFormat
 from llm.base import LLMInterface, LLMMessage
 from plan.domain import (
@@ -27,6 +26,7 @@ from plan.feedback import (
     ExecutorRunBranch,
 )
 from plan.parse import llm_text_to_json, parse_gml_llm_plan, parse_json_llm_plan
+from prompts import DEFAULT_LLM_HYPERS
 from strategy.generate.generate_strategy import GenerateStrategy
 from strategy.notification import (
     ExceptionNotification,
@@ -121,7 +121,7 @@ class PlannerInterface:
                         ),
                     ),
                 ],
-                **DEFAULT_ORACLE_LLM_HYPERS,
+                **DEFAULT_LLM_HYPERS,
             )
             try:
                 json_obj = llm_text_to_json(response.text)
