@@ -21,7 +21,8 @@ from strategy.generate.generate_graph import GenerateGraphOnline
 from strategy.generate.generate_strategy import GenerateStrategy
 from strategy.retry import RetryStrategy, TryManyTimes
 
-random.seed(42)
+
+random.seed(APP_CONFIG.experiment.random_seed)
 
 
 generate_instructions(

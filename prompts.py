@@ -1,5 +1,3 @@
-import json
-
 from tool.tools import TOOL_SCHEMA
 
 STATE_SYSTEM_INIT_MSG = (
@@ -26,24 +24,6 @@ PREDICT_FINAL_STATE_SYSTEM_MSG = (
     "determined from calling tools, use placeholders. "
 )
 
-
-PREDICT_FINAL_STATE_QUERY_TEMPLATE = (
-    "\n"
-    "Initial State: {init_state}\n"
-    "Query: Change driver seat temperature for driver to 25\n"
-    "Final State: {example_one}\n"
-    "\n"
-    "Initial State: {init_state}\n"
-    "Query: Change driving to sport and start a gym playlist\n"
-    "Final State: {example_two}\n"
-    "Initial State: {init_state}"
-    "Query: Change the cockpit to red tell me a joke\n"
-    "Final State: {example_three}"
-    "Initial State: {init_state}"
-    "Query: {query}"
-)
-
-
 DEFAULT_LLM_HYPERS = {
     "temperature": 0,
     "presence_penalty": 0,
@@ -53,25 +33,25 @@ DEFAULT_LLM_HYPERS = {
     "n": 1,
 }
 
-BASE_PLAN_PROMPT_SYS = (
-    "You are a car assistant, using tools to satisfy a user query. "
-    f"The tools you have available are:\n{json.dumps(TOOL_SCHEMA, indent=1)}\n"
+
+_BASE_PLAN_PROMPT_SYS = (
+    "You are a car assistant, using tools to satisfy a user query.{tool_schema}"
 )
 
-JSON_LIST_PLAN_SYS = (
-    BASE_PLAN_PROMPT_SYS + "Tool calls are represented as JSON objects. Results stored "
+_JSON_LIST_PLAN_SYS = (
+    _BASE_PLAN_PROMPT_SYS + " Tool calls are represented as JSON objects. Results stored "
     "in memory can be called using the pattern $NAME_OF_MEMORY$ anywhere "
     "in other function arguments and the stored value will be used "
     "instead of the placeholder. "
 )
 
-JSON_LIST_PLAN_W_REASON_SYS = (
-    JSON_LIST_PLAN_SYS
+_JSON_LIST_PLAN_W_REASON_SYS = (
+    _JSON_LIST_PLAN_SYS
     + "You will give a reason why each tool call was made under the reason field"
 )
 
-GML_PLAN_PROMPT_SYS = (
-    BASE_PLAN_PROMPT_SYS + "You will output the plan using GML direct graph notation. "
+_GML_PLAN_PROMPT_SYS = (
+    _BASE_PLAN_PROMPT_SYS + "You will output the plan using GML direct graph notation. "
     "Each node represent a function call and the edges indicate that "
     "the result of one function call is required in another. "
     "Results stored in memory can be called using the pattern $ID_FUNCTION_CALL$ "
@@ -79,23 +59,26 @@ GML_PLAN_PROMPT_SYS = (
     "instead of the placeholder. "
 )
 
-GML_PLAN_REASON_PROMPT_SYS = (
-    GML_PLAN_PROMPT_SYS
+_GML_PLAN_REASON_PROMPT_SYS = (
+    _GML_PLAN_PROMPT_SYS
     + " You will motivate on each node why that function "
     + "call happened using a 'reason' attribute. "
 )
 
-GML_PLAN_REASON_EDGE_PROMPT_SYS = (
-    GML_PLAN_REASON_PROMPT_SYS
+_GML_PLAN_REASON_EDGE_PROMPT_SYS = (
+    _GML_PLAN_REASON_PROMPT_SYS
     + " You will motivate the existence of each edge using a 'reason' attribute. "
 )
 
-
-def get_system_prompt(plan_mode: str) -> str:
-    return {
-        "json": JSON_LIST_PLAN_SYS,
-        "json+r": JSON_LIST_PLAN_W_REASON_SYS,
-        "gml": GML_PLAN_PROMPT_SYS,
-        "gml+r": GML_PLAN_REASON_PROMPT_SYS,
-        "gml+r+e": GML_PLAN_REASON_EDGE_PROMPT_SYS,
+def get_system_prompt(plan_mode: str, use_tool_schema: bool = True) -> str:
+    prompt = {
+        "json": _JSON_LIST_PLAN_SYS,
+        "json+r": _JSON_LIST_PLAN_W_REASON_SYS,
+        "gml": _GML_PLAN_PROMPT_SYS,
+        "gml+r": _GML_PLAN_REASON_PROMPT_SYS,
+        "gml+r+e": _GML_PLAN_REASON_EDGE_PROMPT_SYS,
     }[plan_mode]
+    if use_tool_schema:
+        return prompt.format(tool_schema=TOOL_SCHEMA)
+    else:
+        return prompt.format(tool_schema="")

@@ -98,6 +98,10 @@ class ExperimentConfig(BaseSettings):
     use_alignment_prediction: List[bool] = [True, False]
     dataset_size: int = 10
     openai_models: List[str] = ["gpt-3.5-turbo-0125"]
+    finetune_tool_bert_percentage: float = 1
+    finetune_tool_bert_fill_tool_count: Optional[int] = None
+    random_seed: int = 42
+    max_tool_slice_size: int = 3
     plan_output_mode: List[str] = ["json", "json+r", "gml", "gml+r", "gml+r+e"]
 
 
