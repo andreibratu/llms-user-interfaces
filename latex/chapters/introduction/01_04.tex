@@ -1,0 +1,75 @@
+\section{An Epistemiological Gap}
+
+Our work has reviewed the current research on language agents to assess the state of the field. It reveals that the topic is still developing, with much of the research focused on traditional tasks like translation, mathematical reasoning, or general knowledge processing. Specifically, 83 papers on the topic of \glspl{llm} using tools were identified by counting the papers that cite *Cognitive Architectures for Language Agents* by Sumers et al. \cite{sumers2024cognitivearchitectureslanguageagents}. This is overshadowed by the broader body of research on \glspl{llm}, with 31,425 papers citing the ChatGPT-3 model's accompanying article \cite{gpt3}. Notably, the topic of \glspl{rag} (retrieval-augmented generation) intersects with various \glspl{llm} research areas, and the count of papers related to \glspl{llm} using tools has been refined to exclude those primarily focused on \glspl{rag}. Additionally, one prominent paper, *ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs* \cite{qin2023toolllmfacilitatinglargelanguage}, has 341 citations, suggesting an upper bound of around 400 papers on language agents.
+
+\pskip
+
+In *Gorilla: Large Language Model Connected with Massive APIs*, Patil et al. \cite{patil2023gorillalargelanguagemodel} fine-tune a ChatGPT-4 architecture to interact with 1,645 APIs. These APIs represent deep learning models hosted on repositories like TorchHub and Hugging Face, which can be accessed using standardized code methods. The model employs the Self-Instruct paradigm \cite{selfinstruct} to generate synthetic user query-API call examples based on documentation from these repositories. An Abstract Syntax Tree is used to verify valid code generations, which are then used to further fine-tune the architecture. The model is also integrated with a \gls{rag} system, which updates API documentation and retrieves the most relevant tools for the user's query. This allows the \gls{llm} to respond to diverse queries, from natural language translation to image manipulation. The authors have continued to develop this approach through an open-source project, *OpenFunctions-v2*, which supports arbitrary functions and allows for multiple or parallel function calls.
+
+\pskip
+
+In \textit{ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs}, Qin et al. \cite{qin2023toolllmfacilitatinglargelanguage} utilize an API repository that indexes numerous APIs and provides a unified interface for querying them. Similar to the approach by Patil et al., the authors fine-tune \glspl{llm} on synthetic demonstrations and employ a \gls{rag} system to adapt to new, unseen APIs as they are scraped and added to the repository. The process is further refined through a depth-first exploration strategy, which generates multiple execution plans for a user query and prunes them to identify the most promising one. Solutions are evaluated using two metrics: the \textbf{pass} metric, where a \gls{llm} evaluator judges whether the final answer aligns with the user's query intent, and the \textbf{win} metric, which compares the quality of one solution against another. It is worth noting that the APIs are not filtered, resulting in functional duplicates within the 16,000-strong tool environment leveraged by the agent.
+
+\pskip
+
+The review of language agent literature leads to several key conclusions. First, reasoning in language agents is heavily dependent on the \textbf{query intention}. Human assessment or relying on \glspl{llm} to evaluate human judgments \cite{zheng2023judgingllmasajudgemtbenchchatbot} is essential for benchmarking \glspl{llm} performance, differing from much of the \glspl{llm} literature that evaluates reasoning or common sense by comparing outputs to a predefined correct answer. Second, current research is focused on developing \textbf{universal language agents}, capable of integrating a wide range of tools and selecting the most relevant ones through a \gls{rag} system based on the user's query. However, this introduces latency, making it difficult to scale these systems for real-world applications. As noted by Mei et al. \cite{aiasos}, a more feasible implementation of \glspl{llm} as user interfaces is likely to involve complementing traditional user interfaces—whether physical or software-based—with a natural language interface that translates user queries into a predefined set of functionalities. Third, a scalable approach involves using \glspl{llm} to generate synthetic examples or evaluations, aligning the models with the ability to utilize tools effectively.
+
+\pskip
+
+This brief overview of language agents contrasts with the broader trends in \glspl{llm} research. Most \glspl{llm} are evaluated using a train-validation-test split, with their output compared against a gold standard answer. Methods like \gls{cot} (Chain of Thought) are designed for this workflow, leveraging the information in the prompt and the knowledge internalized by the \gls{llm} during training to generate responses. In contrast, language agents rely less on drawing out latent knowledge and more on their ability to interpret the user's intent and delegate tasks to external systems or functions.
+
+\pskip
+
+This work focuses on training language agents to serve as interfaces for computing systems. It seeks to bridge the gap between mainstream \gls{llm} research and the specialized subfield of language agents, questioning whether existing prompting methods can enhance performance in this context or if new techniques must be developed. The work is rooted in practical application. While current research on language agents is primarily concerned with building universal agents capable of interfacing with a wide range of tools, this work assumes that industry professionals may favor a different approach. In scenarios where low latency and precision in interpreting user queries are crucial, it is expected that specialized models, fine-tuned for known toolsets, will be preferred—especially when \gls{rag} systems are unavailable and accurately modeling user intent is critical.
+
+\pskip
+
+An important assumption in this work is that the systems with which language agents interface—whether physical or software—have a well-defined purpose. The state of the system is defined by a finite number of attributes, each with values from a finite domain. The user interacts with the system by transitioning it from one state to another. In this context, the language agent's role is to move the system from its current state to the user's desired state, determining the optimal path using available tools, which can be conceptualized as a state machine. This focus is reflected in the subtitle, \textbf{Alignment in Well-Defined Problem Spaces}, and will be explored in depth in the second chapter, where the problem is formally defined. These assumptions enable the exploration of language agents as user interfaces through the following research questions:
+
+\pskip
+
+\textbf{Q1: Are language models capable of understanding user intent? Can we quantify this understanding?}
+
+\vskip 0.1in
+
+As demonstrated by Zheng et al. \cite{zheng2023judgingllmasajudgemtbenchchatbot}, \glspl{llm} are competent approximators of human intent, and they are often used to assess the quality of output generated by other \glspl{llm} in language agents \cite{qin2023toolllmfacilitatinglargelanguage}. By modeling controlled cyber-physical systems as state machines with known attributes, we can numerically quantify how well \glspl{llm} anticipate the user's desired end state. This is achieved by comparing the model-predicted end state with expert human opinion and the actual end state reached through the model’s execution plan. This comparison provides valuable insights into improving language agents. For the scope of this work, we refer to this measure as *alignment*, which is rooted in the \textit{oracle hypothesis} presented in the following chapter.
+
+\pskip
+
+\textbf{Q2: Can language agents handle complex queries with multiple objectives or dependencies?}
+
+\vskip 0.1in
+
+As noted, current research on language agents primarily focuses on equipping \glspl{llm} with numerous tools, transforming them into universal agents. In contrast, this work aims to push the boundaries by testing language agents' ability to manage more complex scenarios involving multiple parallel objectives, conditional execution flows, and tool dependencies. To facilitate this, a novel dataset is proposed, emphasizing these challenges. A comparison between this dataset and existing datasets in the language agent literature will be presented in Chapter \ref{chapter:problem_definition}, \textbf{Problem Definition}.
+
+\pskip
+
+\textbf{Q3: How efficient are current prompting strategies for language agents?}
+
+\vskip 0.1in
+
+In line with the constraints of well-defined systems, the language agents in this study will be prompted to generate structured action plans to fulfill the user’s query with minimal latency. Most existing prompting strategies are developed and evaluated under a different framework than that of language agents, raising concerns about an "epistemological gap." We evaluate various prompting strategies based on the alignment metric from \textbf{Q1} and the executability of the generated plans—that is, whether the plan generated by the language agent can be executed and is logically sound. Additionally, we investigate whether the \gls{json} format is optimal for queries in our dataset, given the output's reliance on task prompt quality, as discussed in Section \ref{chapter:prompting_techniques}.
+
+\pskip
+
+\textbf{Q4: Are there fine-tuning methods that improve language agent performance on our defined problem?}
+
+\vskip 0.1in
+
+By conceptualizing the interaction between language agents and systems as state machines, the execution of one or more tools can be mapped to system state transitions. Given that \glspl{llm} are proficient at approximating human intent \cite{zheng2023judgingllmasajudgemtbenchchatbot}, we hypothesize that language agents struggle to fully "understand" how tool usage impacts the system's state. This work explores this hypothesis and develops a novel fine-tuning technique based on this insight. The approach is compared to a naive method, where the model is simply presented with a query and its corresponding plan.
+
+\pskip
+
+In the following chapters, we address the research questions and methodologies of this study, exploring well-defined systems, experimental design, and performance evaluation of language agents interfacing with cyber-physical systems.
+
+\pskip
+
+Chapter two formalizes well-defined systems, outlines the study's constraints, and introduces the simulated system and a novel benchmarking dataset, comparing it with two existing datasets.
+
+\pskip
+
+Chapter three details the experimental setup, evaluates various prompting strategies, identifies sources of errors in \glspl{llm}' execution plans, and compares the \gls{json} and \gls{gml} formats for plan representation.
+
+\pskip
+
+Chapter four presents a fine-tuning technique based on system state transitions and compares its performance with both a baseline and naive fine-tuning method across all strategies.

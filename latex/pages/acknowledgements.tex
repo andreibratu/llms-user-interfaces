@@ -1,0 +1,24 @@
+\makeatletter
+\ifthenelse{\pdf@strcmp{\languagename}{english}=0}
+{\addcontentsline{toc}{chapter}{Acknowledgments}}
+{\addcontentsline{toc}{chapter}{Danksagungen}}
+\makeatother
+\thispagestyle{empty}
+
+\vspace*{20mm}
+
+\begin{center}
+\makeatletter
+\ifthenelse{\pdf@strcmp{\languagename}{english}=0}
+{\usekomafont{section} Acknowledgments}
+{\usekomafont{section} Danksagungen}
+\makeatother
+\end{center}
+
+\vspace{10mm}
+
+This work has been carried out under the patronage of the prestigious industry partner Bayerische Motoren Werke AG, and the collegiate of the creative ZI-222 research department. Computing power and technical sophistication must always translate in a better, easier or at least more entertaining life for humans. Our shared vision of using natural language to command the intelligent devices we surround ourselves with, including automotive vehicles, has resulted in this labour of love.
+
+I would like to offer thanks to Lukas Stappen and Tobias Eder for their guidance and never-ending patience.
+
+\cleardoublepage{}

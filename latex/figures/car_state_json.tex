@@ -1,0 +1,31 @@
+\begin{lstlisting}[caption={[State of the Studied Cyber-Physical System]The car state on which the language agent operates, reproduced partially here. The values of the attributes are in well-defined ranges. Some properties are available to the agent as read only, allowing conditional queries such as "find the closest fueling station", which depends on the type of fuel powering the car. A full discussion of the properties available to the language agent is present in Appendix \ref{car-state-appendix}.},captionpos=b]
+ {
+    "climate_running": True,
+    "temperature": {
+        "driver": 20,
+        "left": 20,
+        "passenger": 20,
+        "right": 20,
+    },
+    "current_address": CONFIG.current_address,
+    "home_address": CONFIG.home_address,
+    "media_control": {
+        "playing": False,
+        "now_playing": None,
+        "volume": 25,
+    },
+    "destination_waypoints": [],
+    "window": {
+        "driver": 0,
+        "left": 0,
+        "right": 0,
+        "passenger": 0,
+    },
+    "range": 320,
+    "driving_mode": "personal",
+    "ambient_light": "blue",
+    "fuel_type": "diesel",
+    "conversations": {},
+    "speak": []
+\}
+\end{lstlisting}

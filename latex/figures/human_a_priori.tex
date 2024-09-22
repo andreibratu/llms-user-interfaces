@@ -1,0 +1,38 @@
+\begin{figure}[H]
+\captionsetup{format=plain, font=small, labelfont=bf}
+\centering
+\fbox{\begin{minipage}{38em}
+\textbf{Scenario}: \textbf{The large language model controls a smart home environment. The state relates to domestic operations: turning lights on and off in known rooms or controlling the thermostat and the music system.}
+
+\vspace{0.3em}
+\textbf{User Input}: \textit{Can you turn off the lights in the attic please? I forgot about them.}
+
+\vspace{0.5em}
+\checkmark \textbf{Success}: The model maps the user request cleanly to one of its tools to control the state.
+
+\vspace{0.3em}
+\textbf{User Input}: \textit{We have guests coming from the United States this afternoon. Can you change the temperature to something comfortable for them? Can you also make a reservation for dinner in the evening if the weather is good and play music to match the mood?}
+
+\vspace{0.3em}
+\xmark \textbf{Failure}: Should the model include or discard the nationality information about the guests? Should outside conditions such as season or temperature be qeuried in order to parse the vague objective of 'comfortable temperature'?
+\end{minipage}}
+
+\vspace{1em}
+
+\fbox{\begin{minipage}{38em}
+\textbf{Scenario}: \textbf{The large language model acts as an interface for spreadsheet software. The human user is an analyst looking over quarterly financial data. The data is presented neatly in tabular form, with the system's state being the content of a finite number of cells.}
+
+\vspace{0.3em}
+\textbf{User Input}: \textit{Can you sum up column C and put the result in J1?}
+
+\vspace{0.5em}
+\checkmark \textbf{Success}: The model translates the user query into the appropriate, software-specific text that must go into cell J1 to carry out the required summation.
+
+\vspace{0.3em}
+\textbf{User Input}: \textit{Write in J2 an estimate of our relative margin profit to "Big Competitor Co."? If we are in the red, can you suggest a strategy to oucompete them on customer loyalty based in their latest investor prospect?}
+
+\vspace{0.3em}
+\xmark \textbf{Failure}: What are the company's activity domain and competitors? 
+\end{minipage}}
+\caption[Examples of scenarios where the model a priori of user intent is not enough]{Function calling is widely supported by industry providers of large language models: the users provide code-defined tools with documentation and examples of function calls, and the model outputs hints of functions that should be called in response. However, as highlighted in the examples above, as generative \gls{ai} is adopted, it is expected to pick up more complicated scenarios that require chains of function calling, conditional calls and parsing more difficult objectives.}
+\end{figure}

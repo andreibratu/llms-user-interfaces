@@ -1,0 +1,21 @@
+\section{The Oracle Hypothesis}
+
+As iterated during the literature review, \glspl{llm} are capable of approximations of user intent, being capable of ascertaining if the results of an execution plan reflect the query's intent of the system state on par with human experts \cite{zheng2023judgingllmasajudgemtbenchchatbot} \cite{qin2023toolllmfacilitatinglargelanguage}. Plugging this result into our definition of well-defined systems, we derive the \textbf{oracle hypothesis}.
+
+\vskip 0.2in
+
+{
+\centering
+\fbox{
+\begin{minipage}{39em}
+
+\textbf{Oracle Hypothesis}: \glspl{llm} are capable judges of user intent, making them able to predict the well-structured state of the system in the final state. Failures in satisfying user queries arise from the inability to orchestrate coherent execution plans, as the effect of a tool call on the system's state cannot be anticipated.
+
+\end{minipage}
+}
+}
+
+\vskip 0.2in
+
+To quantify the Oracle hypothesis, we introduce a metric that compares the JSON 
+The \textbf{oracle metric} compares the end state predicted by the \gls{llm}. We test the oracle hypothesis on the seed dataset containing human-written queries and execution plans. The \gls{llm} used in our study is asked to predict 

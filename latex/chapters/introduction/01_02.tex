@@ -1,0 +1,39 @@
+\section{Prompting Intelligence}
+
+Having contextualized the rise of \glspl{llm} and the paradigm they have established, it is essential to discuss how the capabilities of \glspl{fm} are being utilized. While their usefulness in downstream writing tasks is evident, the research community has naturally sought to systematize methods for evaluating \glspl{fm}. This section provides an overview of how end users adapt queries presented to \glspl{llm} to achieve specific goals and examines how \gls{nlp} practitioners measure intelligence.
+
+\pskip
+
+In the context of \glspl{llm}, the input provided by the user is referred to as a \textbf{prompt}, which is crafted to instruct the model on the desired task. The literature differentiates between two prompting techniques: zero-shot and few-shot prompting.
+
+\pskip
+
+Zero-shot techniques guide the model’s text output by instructing it to adopt a specific communication style, express a particular emotion \cite{emotionalstimuli} \cite{boundingcapacities}, or roleplay as a specific individual, such as a personal assistant or a domain expert \cite{roleplaying} \cite{helpfulassistant}. In contrast, few-shot techniques \cite{gpt3} include examples, called \textbf{demonstrations}, within the prompt to illustrate the expected output for the task. Research shows that prompts resembling formats commonly seen in training data \cite{Jiang2020}, including demonstrations, using diverse demonstrations that cover a broader range of labels \cite{su2022selectiveannotationmakeslanguage} \cite{min2020ambigqaansweringambiguousopendomain}, and customizing the demonstration format (e.g., not relying solely on a fixed format like \verb+{“Q:  A: ”}+) \cite{Jiang2020} all improve task performance.
+
+\pskip
+
+However, some research suggests that even minor, seemingly irrelevant changes to prompts can affect model behavior, and that the correctness of labels in demonstrations is less crucial than ensuring broad representation of possible labels \cite{min2020ambigqaansweringambiguousopendomain} \cite{wei2023chainofthoughtpromptingelicitsreasoning}. This is particularly important given the potential limitations of the model’s context window. These findings highlight the constraints of foundational models, previously perceived as all-encompassing. In response, methods like prompt mining \cite{Jiang2020} and K-Nearest Neighbors for selecting demonstrations that more closely resemble the test dataset \cite{liu2021makesgoodincontextexamples} have been developed to address these limitations.
+
+\input{figures/zero_shot_examples}
+
+While these methods yield strong results in practical applications, they often rely on human feedback and subjective judgment to evaluate model performance. In contrast, researchers continue to apply \glspl{fm} to standardized \gls{nlp} task datasets, such as those for translation or summarization, to benchmark their capabilities. Additionally, there is growing interest in testing \glspl{llm} on tasks that assess more complex, intelligent behaviors, such as shared knowledge \cite{talmor2019commonsenseqaquestionansweringchallenge}, reading comprehension \cite{zhang2018recordbridginggaphuman}, and arithmetic \cite{cobbe2021trainingverifierssolvemath}.
+
+\pskip
+
+To enhance performance on these more demanding tasks, researchers have identified three main approaches. The most common is \gls{cot} (Chain of Thought), which prompts the model to provide not just an answer but also an explanation of its reasoning process \cite{wei2023chainofthoughtpromptingelicitsreasoning}. Variants of \gls{cot} include generating solutions step by step, with user feedback at each stage \cite{zhou2023threadthoughtunravelingchaotic}, prompting the model for high-level, relevant knowledge \cite{zheng2024stepbackevokingreasoning}, or applying \gls{cot} to training examples and sampling similar solved examples for testing \cite{li2024dialoguepromptingpolicygradientbaseddiscrete}. 
+
+\pskip
+
+The other two approaches include decomposing complex problems into simpler sub-questions and solving each individually \cite{patel2022questiondecompositionunitneed} \cite{wang2023planandsolvepromptingimprovingzeroshot}, or using multiple prompts and selecting the answer supported by a majority vote \cite{khalifa2023exploringdemonstrationensemblingincontext} \cite{wang2023selfconsistencyimproveschainthought}.
+
+\pskip
+
+ With an understanding of how intelligence is measured in \glspl{llm}, we can revisit the perspective on intelligence discussed in the previous section. According to the \Gls{act} framework of cognition \cite{Anderson2013}, intelligent behavior is rooted in three types of knowledge. Declarative knowledge encompasses the facts and goals an intelligent agent seeks to achieve, while procedural knowledge consists of production rules that generate new knowledge or behaviors based on the agent’s current 'working memory' chunks. Human agents blend these two forms of knowledge to navigate novel situations or reprioritize tasks.
+
+ \pskip
+
+Previous statistical models heavily relied on declarative knowledge, such as using context to generate the next word or applying training data to solve similar examples. In contrast, \glspl{llm} seem capable of drawing on internalized production rules to address novel, unseen problems. For instance, they can imitate the speech mannerisms of a specific person to generate coherent output on topics the person has never discussed.
+
+\pskip
+
+Critics, however, argue that this capability may be a form of overfitting. With vast numbers of parameters and access to large corpora, \glspl{llm} can allocate resources for a wide range of input scenarios. This critique mirrors concerns raised against DeepMind's reinforcement learning agents in Vinyals et al., where the AI agents’ extensive training, amounting to decades of human experience, allowed them to observe a far greater portion of game states. As a result, their superhuman performance was seen as philosophically inferior to human intelligence, which internalizes rules more quickly and applies them flexibly to new situations \cite{Vinyals2019}. Similarly, while the procedural knowledge exhibited by \glspl{fm} may be viewed as inferior to human capabilities, it is still present.

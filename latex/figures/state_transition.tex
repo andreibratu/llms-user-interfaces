@@ -1,0 +1,47 @@
+\begin{figure}[ht!]
+    \centering
+    \captionsetup{format=plain, font=small, labelfont=bf}
+    \begin{tikzpicture}
+    \node[state, rectangle] (q1) {\begin{lstlisting}
+ {
+    "temperature": {
+        "driver": 20,
+        "left": 20,
+        "passenger": 20,
+        "right": 20,
+    },
+    "ambient_light": "blue",
+    ...
+\}
+\end{lstlisting}};
+    \node[state, accepting, below right = 2cm of q1, rectangle] (q2) {\begin{lstlisting}
+ {
+    "temperature": {
+        "driver": 24,
+        "left": 20,
+        "passenger": 20,
+        "right": 20,
+    },
+    "ambient_light": "blue",
+    ...
+\}
+\end{lstlisting}};
+    \node[state, above right = 2cm of q1, rectangle] (q3) {\begin{lstlisting}
+ {
+    "temperature": {
+        "driver": 20,
+        "left": 20,
+        "passenger": 20,
+        "right": 20,
+    },
+    "ambient_light": "red",
+    ...
+\}
+\end{lstlisting}};
+    \draw
+        (q1) edge[above right] node{$set\_temperature(24, "driver")$} (q2)
+        (q1) edge[above left] node{$set\_ambient\_light("red")$} (q3);
+\end{tikzpicture}
+   \caption[The State of the Studied Problem]{The abstraction of the cyber-physical system as a state machine, partially depicted here. Restricting the system's state to well-defined attributes and value ranges enables the interpretation of tool execution plans as state transitions. This approach allows for the numerical definition of alignment with user intent and facilitates the development of specific strategies for fine-tuning language agents.}
+    \label{fig:enter-label}
+\end{figure}

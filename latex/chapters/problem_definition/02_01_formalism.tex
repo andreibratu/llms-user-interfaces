@@ -1,0 +1,31 @@
+\section{Formalism}
+
+An analogy for the studied problem can be drawn from control theory, which focuses on systems that evolve over time and require control or monitoring in response to external inputs. A common example is the speed of an airplane, which must remain constant during certain phases of the flight despite external factors like precipitation, wind speed, or the plane's load. Such systems, typically continuous, are often described using differential equations:
+
+\begin{equation}
+    \dot{y}(t) = f(y(t), u(t)), \quad y(0) = x \in \mathbb{R}^n, \quad u \in U \subset \mathbb{R}^m
+\end{equation}
+
+where $u(t)$ represents the \textbf{control parameters}, or the actions taken by the \textbf{control system} to steer the underlying dynamical system. Control can be applied in an open-loop manner, where $u(t)$ remains constant and does not react to external influences. For instance, the autopilot of an airplane could maintain constant engine thrust regardless of external conditions like weather or plane weight. Alternatively, closed-loop systems use the system’s state as \textit{feedback} to influence control actions \cite{zabczyk2020mathematical}:
+
+\begin{equation}\label{closed_loop_eq}
+    u(t) = k(y(t)), \quad t > 0
+\end{equation}
+
+When applied to language agents, the problem is modeled as a closed-loop system, where the \gls{llm} acts as the control system, managing the state of a cyber-physical system based on user input. A user query serves as an input to the system at time $t$, and the \gls{llm}, analogous to the mapping $k$ in \autoref{closed_loop_eq}, determines the next system state based on the current state and the input.
+
+\pskip
+
+The control parameter, or action taken by the LLM to stabilize or transition the system, is guided by its internalized knowledge and understanding of user intent. However, this internalized knowledge alone may not suffice for controlling the system, particularly as LLMs are moving towards architectures like cognitive agents \cite{sumers2024cognitivearchitectureslanguageagents} and OS-LLMs \cite{aiasos}, where interaction with multiple external tools becomes necessary.
+
+\pskip
+
+\input{figures/human_a_priori}
+
+\pskip
+
+This justifies the use of an \gls{llm}, which, unlike classical closed-loop systems in control theory, approximates arbitrary control variables using information that is not directly available from the system state but is essential for addressing the query. Such information may have been internalized during training on large datasets or retrieved from auxiliary systems like vector databases \cite{tonmoy2024comprehensive}\cite{zhang2023retrieve}. In the context of our problem, the agent observes the system's state and transitions and accesses tools to control it.
+
+\pskip
+
+Our investigation focuses on \textbf{well-defined systems}, which can be abstracted as state machines with a finite number of states. Each state is characterized by a fixed set of attributes whose values are \textbf{well-defined} and selected from predefined ranges. At any time $t$, the user queries the language agent, which generates an \textbf{execution plan} consisting of one or more tool calls, resulting in corresponding state transitions. In contrast, \textbf{general language agents} do not manage a defined system but instead generate execution plans to address user queries. Furthermore, the agent's context is limited to the user query, the system’s state, and the results of the tools called during execution. The agent is also equipped with a \textbf{working memory} for execution, allowing it to store and reference tool call results throughout the plan's stages.

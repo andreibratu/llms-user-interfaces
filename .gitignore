@@ -10,3 +10,4 @@ debug/*
 .cachedir
 .pytest_cache
 .vscode
+venv

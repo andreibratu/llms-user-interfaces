@@ -1,0 +1,30 @@
+\chapter{\abstractname}
+
+Large language models represent a milestone in the discipline of natural language processing. Their ability to adapt to novel tasks without further training, using few to no demonstrations, matches the definition of intelligence as the ability to solve complex problems and achieve goals. A sizeable portion of the literature investigates the presence of 'common sense', 'reasoning' or 'problem-solving' in such models.
+ 
+This work investigates the use of large language models as user interfaces: mediators between humans and computing systems. The model interprets a query presented in natural language and then delegates work to sub-modules, or tools, that impact the system's state. Such problems are deemed in the scope of this work as "well-defined": the desired changes to the system's state are either present or inferrable from the query, and there is a clear mapping between properties of the system and the tool or chain of tools required to modify it, and the properties of the state tend to be themselves finite or in defined ranges. Such well-defined problems are contrasted by the more abstract and creative tasks such as creating writing materials, writing program code snippets or knowledge queries.
+
+The investigation introduces the "oracle hypothesis": large language models have an innate understanding of human expectations and can anticipate the desired end state from the query. They are, however, incapable of forming a plan of action to achieve the desired end state. The prompting and reasoning strategies found in the literature are ineffective due to a bias of datasets representative of the second problem class. Leveraging the well-defined nature of the controller scenario, novel prompting and fine-tuning techniques are developed for user-model alignment. 
+
+
+
+\makeatletter
+\ifthenelse{\pdf@strcmp{\languagename}{english}=0}
+{\renewcommand{\abstractname}{Kurzfassung}}
+{\renewcommand{\abstractname}{Abstract}}
+\makeatother
+
+\chapter{\abstractname}
+
+%TODO: Abstract in other language
+\begin{otherlanguage}{ngerman} % TODO: select other language, either ngerman or english !
+
+\end{otherlanguage}
+
+
+% Undo the name switch
+\makeatletter
+\ifthenelse{\pdf@strcmp{\languagename}{english}=0}
+{\renewcommand{\abstractname}{Abstract}}
+{\renewcommand{\abstractname}{Kurzfassung}}
+\makeatother

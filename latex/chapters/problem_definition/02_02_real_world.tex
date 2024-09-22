@@ -1,0 +1,23 @@
+\section{Simulating A Real World Scenario}
+
+This work examines a cyber-physical system where a language agent manages the cockpit functionalities of a car. Following the framework of LLM-powered operating systems \cite{aiasos}, the car’s state is controlled through physical inputs, complemented by a voice assistant that converts audio input into natural language queries for the \gls{llm}. The agent is limited to non-mission-critical functions and does not control the car’s driving operations. Its capabilities include controlling the climate, media system, cockpit lighting, navigation system, and sending messages as instructed by the user.
+
+\pskip
+
+The system under study follows the constraints of a well-defined problem, with some important exceptions. The user can modify properties like \texttt{speak}, which simulates the model producing output to the user, or \texttt{speak}, where the \gls{llm} communicates with hypothetical contacts by sending text messages on the user’s behalf. These properties are included for practical reasons and can be disregarded when quantifying the system’s state transitions.
+
+\input{figures/car_state_json}
+
+The agent interacts with the cyber-physical system’s state using a defined set of tools. The system is assessed at a software-in-the-loop level, bypassing the physical hardware and instead applying tools to a representation of the car’s state. The agent’s tools fall into three categories. The first category influences the system’s state by controlling physical functions, such as adjusting media volume or interior lighting. The second category interfaces with external systems to provide the agent with additional information, such as weather data, internet searches, or navigation routes. The third category consists of tools that verify the car’s current state or prompt the agent to assess the truth of a statement. Unlike general language agents, our system features the first category of tools for direct control.
+
+\pskip
+
+
+To support our study, a UX survey was conducted by human users on a prototype cyber-physical system powered by a language agent. Key points of failure for the agent were identified: it struggles with queries involving multiple objectives, queries where the entire plan is conditioned by external factors (e.g., weather), and queries where one tool call depends on the result of a previous call, such as setting car navigation to a venue relevant to the current media playing. Human experts created 40 test cases to evaluate the language agent on these challenging scenarios. These experts also annotated the queries with tool call plans that successfully address the user requests. This dataset will henceforth be referred to as the \textbf{seed dataset}.
+
+\pskip
+
+
+\input{figures/state_transition}
+
+\FloatBarrier
