@@ -41,7 +41,7 @@ _RETRY_STRATEGIES: List[RetryStrategy] = [
 _GENERATE_STRATEGIES: List[GenerateStrategy] = []
 
 
-for llm, wp, num_dems, feedback_strategy, use_align_pred in itertools.product(
+for llm, wp, num_demonstrations, feedback_strategy, use_align_pred in itertools.product(
     _LLMS,
     APP_CONFIG.experiment.wire_producers,
     APP_CONFIG.experiment.num_demonstrations,
@@ -53,7 +53,7 @@ for llm, wp, num_dems, feedback_strategy, use_align_pred in itertools.product(
         "llm_hypers": DEFAULT_LLM_HYPERS,
         "err_feedback_strategy": feedback_strategy,
         "wire_producers": wp,
-        "num_examples_system": num_dems,
+        "num_examples_system": num_demonstrations,
         "use_alignment_prediction": use_align_pred,
     }
     _GENERATE_STRATEGIES.extend(
@@ -64,7 +64,7 @@ for llm, wp, num_dems, feedback_strategy, use_align_pred in itertools.product(
 
 # for (
 #     llm,
-#     num_dems,
+#     num_demonstrations,
 #     feedback_strategy,
 #     use_align_pred,
 #     plan_output_mode,
@@ -79,7 +79,7 @@ for llm, wp, num_dems, feedback_strategy, use_align_pred in itertools.product(
 #         "planner_llm": llm,
 #         "llm_hypers": DEFAULT_LLM_HYPERS,
 #         "err_feedback_strategy": feedback_strategy,
-#         "num_demonstrations": num_dems,
+#         "num_demonstrations": num_demonstrations,
 #         "use_alignment_prediction": use_align_pred,
 #         "plan_output_mode": plan_output_mode,
 #     }
@@ -131,13 +131,13 @@ experiment_it: Iterable[Tuple[LLMInterface, RetryStrategy, GenerateStrategy]] = 
         _GENERATE_STRATEGIES,
     )
 )
-num_configuations = np.prod(
+num_configurations = np.prod(
     [len(_LLMS), len(_RETRY_STRATEGIES), len(_GENERATE_STRATEGIES)]
 )
 for llm, rs, gs in (
     epb := tqdm.tqdm(
         iterable=experiment_it,
-        total=num_configuations,
+        total=num_configurations,
     )
 ):
     SESSION.ORACLE = llm
