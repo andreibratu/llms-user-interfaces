@@ -147,7 +147,7 @@ def _known_tools_missing_end_state_op(
                 separators=(",", ":"),
             ),
         ).model_dump(),
-        LLMMessage(role="user", content=f"How does memory change?").model_dump(),
+        LLMMessage(role="user", content="How does memory change?").model_dump(),
         LLMMessage(
             role="assistant",
             content=json.dumps(end_memory, separators=(",", ":")),
@@ -204,7 +204,7 @@ def _missing_tool_op(
         LLMMessage(
             role="user",
             content=(
-                f"The following properties have changed after calling tools:\n"
+                "The following properties have changed after calling tools:\n"
                 + "\n".join(
                     f"{k}: {start_car_state[k]} -> {end_car_state[k]}" for k in changes
                 )

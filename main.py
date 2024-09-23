@@ -17,7 +17,6 @@ from plan.executor import solve_query
 from plan.planner import LLMPlanner, QueryEvaluation
 from prompts import DEFAULT_LLM_HYPERS
 from strategy.generate.generate_blind import GenerateBlindOffline
-from strategy.generate.generate_graph import GenerateGraphOnline
 from strategy.generate.generate_strategy import GenerateStrategy
 from strategy.retry import RetryStrategy, TryManyTimes
 
@@ -40,27 +39,6 @@ _RETRY_STRATEGIES: List[RetryStrategy] = [
 ]
 _GENERATE_STRATEGIES: List[GenerateStrategy] = []
 
-
-for llm, wp, num_demonstrations, feedback_strategy, use_align_pred in itertools.product(
-    _LLMS,
-    APP_CONFIG.experiment.wire_producers,
-    APP_CONFIG.experiment.num_demonstrations,
-    APP_CONFIG.experiment.feedback_strategies,
-    APP_CONFIG.experiment.use_alignment_prediction,
-):
-    init_args = {
-        "planner_llm": llm,
-        "llm_hypers": DEFAULT_LLM_HYPERS,
-        "err_feedback_strategy": feedback_strategy,
-        "wire_producers": wp,
-        "num_examples_system": num_demonstrations,
-        "use_alignment_prediction": use_align_pred,
-    }
-    _GENERATE_STRATEGIES.extend(
-        [
-            GenerateGraphOnline(**init_args),
-        ]
-    )
 
 # for (
 #     llm,
