@@ -1,43 +1,44 @@
 import itertools
 import json
 import random
-from typing import Iterable, List, Tuple
+from typing import Iterable, list, tuple
 
 import numpy as np
 import tqdm
 
-import session as SESSION
-from configuration import APP_CONFIG
-from database import planner_evaluated, write_metrics
-from dataset.instructions import generate_instructions
-from llm.base import LLMInterface
-from llm.openai import OpenAILLM
-from plan.evaluation import LLMPlannerResult
-from plan.executor import solve_query
-from plan.planner import LLMPlanner, QueryEvaluation
-from prompts import DEFAULT_LLM_HYPERS
-from strategy.generate.generate_blind import GenerateBlindOffline
-from strategy.generate.generate_strategy import GenerateStrategy
-from strategy.retry import RetryStrategy, TryManyTimes
+import src.session as SESSION
+from src.database import planner_evaluated, write_metrics
+from src.dataset.benchmark import generate_benchmark_dataset
+from src.llm import LLMInterface
+from src.llm.openai import OpenAILLM
+from src.plan.evaluation import LLMPlannerResult
+from src.plan.executor import solve_query
+from src.plan.planner import LLMPlanner, QueryEvaluation
+from src.prompts import DEFAULT_LLM_HYPERS
+from src.strategy.generate.generate_blind import GenerateBlindOffline
+from src.strategy.generate.generate_strategy import GenerateStrategy
+from src.strategy.retry import RetryStrategy, TryManyTimes
 
 
-random.seed(APP_CONFIG.experiment.random_seed)
+random.seed(SESSION.APP_CONFIG.experiment.random_seed)
 
 
-generate_instructions(
+generate_benchmark_dataset(
     generator_llm=SESSION.LLM,
-    num_instructions_generate=APP_CONFIG.generation.generate_size,
+    num_instructions_generate=SESSION.APP_CONFIG.generation.generate_size,
 )
 
 with open("data/dataset.jsonl", "r", encoding="utf-8") as fp:
     lines = fp.readlines()
 
-_LLMS = [OpenAILLM(model=model) for model in APP_CONFIG.experiment.openai_models]
-_EVAL_DATASET = random.sample(lines, APP_CONFIG.experiment.dataset_size)
-_RETRY_STRATEGIES: List[RetryStrategy] = [
+_LLMS = [
+    OpenAILLM(model=model) for model in SESSION.APP_CONFIG.experiment.openai_models
+]
+_EVAL_DATASET = random.sample(lines, SESSION.APP_CONFIG.experiment.dataset_size)
+_RETRY_STRATEGIES: list[RetryStrategy] = [
     TryManyTimes(retry_time) for retry_time in [1, 3]
 ]
-_GENERATE_STRATEGIES: List[GenerateStrategy] = []
+_GENERATE_STRATEGIES: list[GenerateStrategy] = []
 
 
 # for (
@@ -102,12 +103,12 @@ _GENERATE_STRATEGIES = [
     ),
 ]
 
-experiment_it: Iterable[
-    Tuple[LLMInterface, RetryStrategy, GenerateStrategy]
-] = itertools.product(
-    _LLMS,
-    _RETRY_STRATEGIES,
-    _GENERATE_STRATEGIES,
+experiment_it: Iterable[tuple[LLMInterface, RetryStrategy, GenerateStrategy]] = (
+    itertools.product(
+        _LLMS,
+        _RETRY_STRATEGIES,
+        _GENERATE_STRATEGIES,
+    )
 )
 num_configurations = np.prod(
     [len(_LLMS), len(_RETRY_STRATEGIES), len(_GENERATE_STRATEGIES)]
@@ -125,8 +126,8 @@ for llm, rs, gs in (
         llm=llm,
     )
 
-    for repeat_idx in range(APP_CONFIG.experiment.repeat_experiments):
-        query_evaluations: List[QueryEvaluation] = []
+    for repeat_idx in range(SESSION.APP_CONFIG.experiment.repeat_experiments):
+        query_evaluations: list[QueryEvaluation] = []
         trial_id = f"{planner.identifier}_{repeat_idx}"
         if planner_evaluated(trial_id):
             epb.write(f"Planner {trial_id} already evaluated")

@@ -1,9 +1,0 @@
-reports/
-.mongolite
-__pycache__
-README.md
-diagrams/
-draft.py
-.gitignore
-.venv/
-.db/
