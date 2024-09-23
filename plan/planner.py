@@ -42,7 +42,6 @@ from tool.tools import get_current_date, weather_tool
 
 
 class PlannerInterface:
-
     def __init__(self, llm: LLMInterface) -> None:
         self._evaluation: QueryEvaluation = None
         self._feedback: ExecutorFeedback = None
@@ -222,7 +221,6 @@ class SeedPlanner(PlannerInterface):
 
 
 class LLMPlanner(PlannerInterface):
-
     def __init__(
         self,
         retry_strategy: RetryStrategy,
@@ -360,9 +358,11 @@ class LLMPlanner(PlannerInterface):
                 # Allow the strategy to amend steps if online strategy
                 try:
                     t1 = perf_counter()
-                    raw_llm_text, plan_extension, tokens = (
-                        self.generator_strategy.update()
-                    )
+                    (
+                        raw_llm_text,
+                        plan_extension,
+                        tokens,
+                    ) = self.generator_strategy.update()
                     curr_attempt.time_taken_ms += (perf_counter() - t1) * 1000
                     plan.extend(plan_extension)
                     curr_attempt.intended_plan.extend(

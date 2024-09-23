@@ -25,7 +25,7 @@ random.seed(APP_CONFIG.experiment.random_seed)
 
 
 generate_instructions(
-    generator_llm=SESSION.ORACLE,
+    generator_llm=SESSION.LLM,
     num_instructions_generate=APP_CONFIG.generation.generate_size,
 )
 
@@ -102,12 +102,12 @@ _GENERATE_STRATEGIES = [
     ),
 ]
 
-experiment_it: Iterable[Tuple[LLMInterface, RetryStrategy, GenerateStrategy]] = (
-    itertools.product(
-        _LLMS,
-        _RETRY_STRATEGIES,
-        _GENERATE_STRATEGIES,
-    )
+experiment_it: Iterable[
+    Tuple[LLMInterface, RetryStrategy, GenerateStrategy]
+] = itertools.product(
+    _LLMS,
+    _RETRY_STRATEGIES,
+    _GENERATE_STRATEGIES,
 )
 num_configurations = np.prod(
     [len(_LLMS), len(_RETRY_STRATEGIES), len(_GENERATE_STRATEGIES)]
@@ -118,7 +118,7 @@ for llm, rs, gs in (
         total=num_configurations,
     )
 ):
-    SESSION.ORACLE = llm
+    SESSION.LLM = llm
     planner = LLMPlanner(
         retry_strategy=rs,
         generation_strategy=gs,

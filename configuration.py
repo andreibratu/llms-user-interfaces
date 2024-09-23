@@ -97,7 +97,7 @@ class ExperimentConfig(BaseSettings):
     retry_times: List[int] = [1]
     use_alignment_prediction: List[bool] = [True, False]
     dataset_size: int = 10
-    openai_models: List[str] = ["gpt-3.5-turbo-0125"]
+    openai_model: str = "gpt-4o-2024-05-13"
     finetune_tool_bert_percentage: float = 1
     finetune_tool_bert_fill_tool_count: Optional[int] = None
     random_seed: int = 42
@@ -129,6 +129,3 @@ class AppConfig(BaseSettings):
         str_to_lower=True,
         env_nested_delimiter="__",
     )
-
-
-APP_CONFIG = AppConfig()

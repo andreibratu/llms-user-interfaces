@@ -124,7 +124,7 @@ def solve_query(query: str, planner: LLMPlanner) -> None:
                 assert (
                     step[0].evaluate_condition
                 ), "Badly formed branch, no condition on first PlanStep"
-                response = SESSION.ORACLE.invoke(
+                response = SESSION.LLM.invoke(
                     [
                         LLMMessage(
                             role="assistant",

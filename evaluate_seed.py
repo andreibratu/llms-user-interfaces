@@ -15,8 +15,8 @@ from plan.executor import solve_query
 from plan.planner import SeedPlanner
 
 if __name__ == "__main__":
-    LLM = OpenAILLM("gpt-3.5-turbo-0125")
-    SESSION.ORACLE = LLM
+    LLM = OpenAILLM(SESSION.APP_CONFIG.experiment.openai_model)
+    SESSION.LLM = LLM
 
     for mode in APP_CONFIG.experiment.plan_output_mode:
         seed_planner = SeedPlanner(LLM, mode)
@@ -42,7 +42,6 @@ if __name__ == "__main__":
 
         with tqdm.tqdm(total=num_plans, desc=mode) as progress_bar:
             for query, seed_plans in dataset.items():
-
                 for plan in seed_plans:
                     query_plan_id = joblib_hash(
                         f"{len(query)}{query}|{len(plan)}{plan}"

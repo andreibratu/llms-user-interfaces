@@ -266,7 +266,7 @@ def speak_user(query: str, data: Optional[JSONType] = None) -> None:
             code=ExceptionCode.ARGUMENT_VALIDATION,
             message="Arguments for speak_user should be strings or JSON objects",
         )
-    response: LLMResponse = SESSION.ORACLE.invoke(
+    response: LLMResponse = SESSION.LLM.invoke(
         [
             LLMMessage(
                 role="system",
@@ -447,7 +447,7 @@ def llm_parse_json(
         "You are receiving a JSON input and are required to apply an operation to it. "
         + subprompt
     )
-    result: LLMResponse = SESSION.ORACLE.invoke(
+    result: LLMResponse = SESSION.LLM.invoke(
         [
             LLMMessage(role="system", content=prompt),
             LLMMessage(role="user", content=f"Query: {query}\nObject: {json_object}"),
@@ -530,7 +530,7 @@ def media_search(query: str, types: List[SpotifySearch]) -> JSONType:
 
 @TOOL_CACHE.cache
 def truthy(query: str) -> bool:
-    response: LLMResponse = SESSION.ORACLE.invoke(
+    response: LLMResponse = SESSION.LLM.invoke(
         [
             LLMMessage(
                 role="system",

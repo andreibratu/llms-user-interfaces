@@ -74,9 +74,9 @@ def _validate_instruction(text: str) -> bool:
     if any(token in text.lower() for token in deny_list):
         return False
     # Verbs check
-    pos_categorisation = [pos[1] for pos in nltk.pos_tag(word_tokenize(text))]
+    pos_categorization = [pos[1] for pos in nltk.pos_tag(word_tokenize(text))]
     verb_pos = [
-        pos for pos in pos_categorisation if pos in APP_CONFIG.generation.all_verbs
+        pos for pos in pos_categorization if pos in APP_CONFIG.generation.all_verbs
     ]
     if all(pos == "VBG" for pos in verb_pos):
         return False
