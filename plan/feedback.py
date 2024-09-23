@@ -3,7 +3,7 @@ from typing import Dict, List, Union
 from pydantic import BaseModel, ConfigDict
 
 from plan.domain import PlanStep, Transition
-from plan.exceptions import ExecutionException
+from plan.exceptions import BenchmarkException
 
 
 class ExecutorOkFeedback(BaseModel):
@@ -23,7 +23,7 @@ class ExecutorSkipBranch(BaseModel):
 
 class ExecutorFailureFeedback(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    exception: ExecutionException
+    exception: BenchmarkException
 
 
 ExecutorFeedback = Union[

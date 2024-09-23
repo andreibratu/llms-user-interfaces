@@ -43,6 +43,7 @@ class GenerateReact(GenerateStrategy):
         tokens = 0
         delta_seconds = (datetime.now() - self._timer).total_seconds()
         if delta_seconds > self._timeout_generation:
+            # TODO: remove timeout
             raise MisgeneratedPlanException(
                 code=39,
                 message="Timeout on generation GenerateReact",

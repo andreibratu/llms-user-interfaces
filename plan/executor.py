@@ -11,7 +11,7 @@ from plan.domain import (
     PlanSuccessExecutorNotification,
     Transition,
 )
-from plan.exceptions import MemoryException, ToolException, UnknownToolException
+from plan.exceptions import BenchmarkException, ExceptionCode
 from plan.feedback import (
     ExecutorFailureFeedback,
     ExecutorOkFeedback,
@@ -29,10 +29,10 @@ def _pre_process_args(fn_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
                 args["types"] = [args["types"]]
             args["types"] = tuple(args["types"])
         else:
-            raise ToolException(
+            raise BenchmarkException(
                 tool_name="media_search",
                 taxonomy="illegal_value",
-                code=31,
+                code=ExceptionCode.ARGUMENT_VALIDATION,
                 message="types parameter should be in args for "
                 + "media_search and be a list",
             )
@@ -43,15 +43,14 @@ def replace_slots_with_memory(
     memory: Dict[str, Any],
     fn_args: Optional[Dict[str, Any]],
 ) -> Dict[str, Any]:
-    def _replace_slots_subfn(val_with_slots: str) -> Optional[str]:
+    def _replace_memory_reference(val_with_slots: str) -> Optional[str]:
         matches = re.findall(r"\$(\w+)\$", val_with_slots)
         if len(matches) == 0:
             return val_with_slots
         for mt in matches:
             if mt.lower() not in memory:
-                raise MemoryException(
-                    taxonomy="illegal_read",
-                    code=22,
+                raise BenchmarkException(
+                    code=ExceptionCode.MEMORY,
                     message=f"Variable {mt} not found in memory",
                 )
             recall_val = memory[mt.lower()]
@@ -70,10 +69,10 @@ def replace_slots_with_memory(
             continue
         if isinstance(arg_value, dict):
             arg_value = json.dumps(arg_value)
-            arg_value = _replace_slots_subfn(arg_value)
+            arg_value = _replace_memory_reference(arg_value)
             arg_value = json.loads(arg_value)
         elif isinstance(arg_value, list):
-            arg_value = [_replace_slots_subfn(val) for val in arg_value]
+            arg_value = [_replace_memory_reference(val) for val in arg_value]
             new_value = []
             # Avoid sublists when replacing slots - lists are kept one depth
             for sub_value in arg_value:
@@ -87,7 +86,7 @@ def replace_slots_with_memory(
                     new_value.append(sub_value)
             arg_value = new_value
         else:
-            arg_value = _replace_slots_subfn(arg_value)
+            arg_value = _replace_memory_reference(arg_value)
         fn_args[arg_name] = arg_value
     return fn_args
 
@@ -122,11 +121,9 @@ def solve_query(query: str, planner: LLMPlanner) -> None:
 
             if isinstance(step, list):
                 # Assuming condition branch
-                assert step[
-                    0
-                ].evaluate_condition, (
-                    "Badly formed branch, no condition on first PlanStep"
-                )
+                assert (
+                    step[0].evaluate_condition
+                ), "Badly formed branch, no condition on first PlanStep"
                 response = SESSION.ORACLE.invoke(
                     [
                         LLMMessage(
@@ -164,30 +161,35 @@ def solve_query(query: str, planner: LLMPlanner) -> None:
             tool_name = step.tool_name
             if tool_name not in tools.TOOL_NAMES:
                 planner.post_feedback(
-                    ExecutorFailureFeedback(exception=UnknownToolException(code=23))
+                    ExecutorFailureFeedback(
+                        exception=BenchmarkException(
+                            code=ExceptionCode.TOOL_SIGNATURE,
+                            message=f"Tool {tool_name} not found in tools",
+                        )
+                    )
                 )
                 continue
 
             tool_args = step.args
             try:
                 tool_args = replace_slots_with_memory(_memory, tool_args)
-            except MemoryException as e:
+            except BenchmarkException as e:
                 planner.post_feedback(ExecutorFailureFeedback(exception=e))
                 continue
 
             try:
                 tool_args = _pre_process_args(tool_name, tool_args)
                 tool_output = getattr(tools, tool_name)(**tool_args)
-            except ToolException as e:
+            except BenchmarkException as e:
                 planner.post_feedback(ExecutorFailureFeedback(exception=e))
                 continue
             except TypeError as e:
                 planner.post_feedback(
                     ExecutorFailureFeedback(
-                        exception=ToolException(
+                        exception=BenchmarkException(
                             tool_name,
                             "wrong_signature",
-                            code=27,
+                            code=ExceptionCode.TOOL_SIGNATURE,
                             message=str(e),
                         )
                     )

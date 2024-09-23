@@ -8,7 +8,7 @@ from dataset.read_seed import read_seed_dataset
 from domain import Metadata, PlanFormat
 from llm.base import LLMInterface, LLMMessage
 from plan.domain import PlanStep, PlanType, Transition
-from plan.exceptions import ExecutionException
+from plan.exceptions import BenchmarkException
 from prompts import get_system_prompt
 from strategy.base import PlannerStrategy
 from strategy.notification import (
@@ -29,7 +29,6 @@ LLMErrorFeedbackStrategyType = Literal[
 
 
 class GenerateStrategy(PlannerStrategy):
-
     _DIFFER = difflib.Differ()
 
     def __init__(
@@ -50,7 +49,7 @@ class GenerateStrategy(PlannerStrategy):
         self.plan_format = plan_format
         self.planner_llm = planner_llm
         self._llm_hypers = llm_hypers
-        self._error: ExecutionException = None
+        self._error: BenchmarkException = None
         self._transitions: List[Transition] = []
         self._llm_chat: List[LLMMessage] = []
         self._step_to_execute: PlanStep = []

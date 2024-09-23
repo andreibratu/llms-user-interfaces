@@ -18,7 +18,7 @@ from rouge_score import rouge_scorer
 
 from configuration import APP_CONFIG
 from llm.base import LLMInterface, LLMMessage, LLMResponse
-from plan.exceptions import ToolException
+from plan.exceptions import BenchmarkException
 from tool.tools import TOOL_HEADERS
 
 random.seed(42)
@@ -33,7 +33,7 @@ def _generate_instructions_system_prompt() -> str:
         "Write them from user perspective. Try to include multiple tasks in each scenario. "
         "Use places of interest like zoos, museums, theatres or restaurants. "
         "Make them different from the example scenarios. "
-        "Use kilometres and celsius degrees. "
+        "Use kilometers and celsius degrees. "
         "Ask about local area. Only include scenarios that can be solved by available tools"
         f"You can control the car using these tools: {TOOL_HEADERS}. "
         "Come up with new scenario the assistant should be able to handle.\n"
@@ -168,7 +168,7 @@ def generate_instructions(
                     )
                     for user_prompt in batch_user_prompts
                 ]
-            except ToolException:
+            except BenchmarkException:
                 # TODO: Handle filtering policy more elegantly
                 continue
             results = [res for res in results if res and len(res.text) > 0]

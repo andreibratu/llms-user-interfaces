@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict
 
 from car_state import CarState
 from plan.domain import PlanStep, Transition
-from plan.exceptions import ExecutionException
+from plan.exceptions import BenchmarkException
 
 
 class NewQueryNotification(BaseModel):
@@ -23,7 +23,7 @@ class OkStrategyNotification(BaseModel):
 
 
 class ExceptionNotification(BaseModel):
-    exception: ExecutionException
+    exception: BenchmarkException
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 

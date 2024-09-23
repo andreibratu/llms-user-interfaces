@@ -14,12 +14,10 @@ from tenacity import (
 from configuration import APP_CONFIG
 from domain import Metadata
 from llm.base import LLMInterface, LLMMessage, LLMResponse
-from plan.exceptions import ToolException
+from plan.exceptions import ExceptionCode, BenchmarkException
 
 
-# TODO: logit bias for increased plan likelihood
 class OpenAILLM(LLMInterface):
-
     def __init__(self, model: str) -> None:
         self._client = OpenAI(api_key=APP_CONFIG.openai.api_key)
         self._model = model
@@ -33,7 +31,7 @@ class OpenAILLM(LLMInterface):
         return {"model": self._model, "type": "openai"}
 
     @retry(
-        retry=retry_if_not_exception_type(ToolException),
+        retry=retry_if_not_exception_type(BenchmarkException),
         wait=wait_random_exponential(min=1, max=APP_CONFIG.retry_max_seconds),
         stop=stop_after_attempt(5),
     )
@@ -45,13 +43,13 @@ class OpenAILLM(LLMInterface):
             response: ChatCompletion = self._client.chat.completions.create(
                 model=self._model,
                 messages=[msg.model_dump() for msg in messages],
-                **kwargs
+                **kwargs,
             )
         except (BadRequestError, HTTPStatusError) as e:
-            # TODO: Maybe make its own error since ToolException is innapropiate here
-            raise ToolException(
+            # TODO: Maybe make its own error since BenchmarkException is inappropriate here
+            raise BenchmarkException(
                 tool_name="openai_invoke",
-                code=35,
+                code=ExceptionCode.UNEXPECTED,
                 taxonomy="openai_throws",
                 message=str(e),
             ) from e
