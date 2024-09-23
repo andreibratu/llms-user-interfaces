@@ -18,8 +18,6 @@ from src.plan.domain import PlanStep
 
 import src.session as SESSION
 
-nltk.download("stopwords")
-
 
 def _summarize_car_state_for_alignment(
     car_state: dict[str, Any],

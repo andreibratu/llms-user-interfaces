@@ -25,8 +25,6 @@ _TRANSFORMER = Html2TextTransformer()
 
 _SELENIUM_WORKERS: list[webdriver.Chrome] = []
 
-nltk.download("punkt")
-
 
 def _fetch_url(args) -> str:
     idx, url = args

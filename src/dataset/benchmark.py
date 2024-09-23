@@ -22,9 +22,6 @@ from src.plan.exceptions import BenchmarkException
 from src.tool.tools import TOOL_HEADERS
 
 random.seed(42)
-nltk.download("punkt")
-nltk.download("wordnet")
-nltk.download("averaged_perceptron_tagger")
 
 
 _SYSTEM_PROMPT = (
