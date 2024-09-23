@@ -2,7 +2,6 @@ import networkx as nx
 
 
 class GraphException(Exception):
-
     def __init__(
         self,
         message: str,

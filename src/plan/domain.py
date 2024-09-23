@@ -1,6 +1,6 @@
 """Instructions sent from planner to executor."""
 
-from typing import Any, dict, Optional
+from typing import Any, Optional, dict
 
 from pydantic import BaseModel, ValidationError, field_validator
 

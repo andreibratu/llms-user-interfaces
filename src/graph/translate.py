@@ -2,13 +2,12 @@ import json
 import re
 from collections import defaultdict
 from inspect import Signature, getmembers, signature
-from typing import dict, list, Optional, tuple
+from typing import Optional, dict, list, tuple
 from uuid import uuid4
 
 import networkx as nx
-from networkx.classes.reportviews import NodeView
-
 from graph.domain import EdgeType, NodeType
+from networkx.classes.reportviews import NodeView
 from plan.domain import PlanStep
 from tool import tools
 

@@ -1,16 +1,14 @@
 import json
 import re
-from typing import Any, dict, list, Optional, Set, Union
+from typing import Any, Optional, Set, Union, dict, list
 
 import networkx as nx
 import regex
 from langchain_core.exceptions import OutputParserException
 from langchain_core.output_parsers.json import JsonOutputParser
-from pydantic import ValidationError
-
 from plan.domain import PlanStep, PlanType
 from plan.exceptions import MisgeneratedPlanException
-
+from pydantic import ValidationError
 
 _PARSER = JsonOutputParser()
 

@@ -5,24 +5,24 @@ from collections import Counter
 from functools import cached_property
 from math import floor
 from statistics import mean
-from typing import Any, ClassVar, dict, list, Optional, tuple, Union
+from typing import Any, ClassVar, Optional
 
 import nltk
 from Levenshtein import ratio as levenshtein_ratio
 from nltk.stem import PorterStemmer
 from pydantic import BaseModel, computed_field
 
+import src.session as SESSION
 from src.car_state import CarState
 from src.domain import PlanFormat
 from src.plan.domain import PlanStep
-
-import src.session as SESSION
+from src.plan.exceptions import BenchmarkException
 
 
 def _summarize_car_state_for_alignment(
     car_state: dict[str, Any],
 ) -> dict[str, Any]:
-    def _simplify_string(text: str) -> list[str]:
+    def _simplify_string(text: str) -> str:
         stopwords = set(nltk.corpus.stopwords.words("english"))
         text = text.lower()
         stemmer = PorterStemmer()
@@ -63,7 +63,7 @@ class QueryAttempt(BaseModel):
     memory_states: list[dict] = []
     used_tokens: int = 0
     time_taken_ms: int = 0
-    error: Optional[dict] = None
+    error: BenchmarkException | None = None
     predicted_state_alignment: Optional[CarState] = None
 
     @computed_field
@@ -165,8 +165,6 @@ class LLMPlannerResult(BaseModel):
 
     METRICS: ClassVar[list[str]] = [
         "success_rate",
-        "partial_executability_best_effort",
-        "partial_executability_mean",
         "mean_tokens",
         "mean_execution_time",
         "mean_success_tokens",
@@ -198,53 +196,14 @@ class LLMPlannerResult(BaseModel):
         return mean(lengths)
 
     @property
-    def partial_executability_best_effort(self) -> Union[float, None]:
-        """
-        Evaluate only the last instance which must be the best attempt of the model.
-        """
-        if not self.is_online_strategy:
-            return None
-        exec_best_attempt_query = []
-        for query in self.query_evaluations:
-            if len(query.attempts) == 0 or len(query.attempts[-1].intended_plan) == 0:
-                # JSON could not be parsed for LLM outputted plan
-                exec_best_attempt_query.append(0)
-            else:
-                exec_best_attempt_query.append(
-                    len(query.attempts[-1].executed_plan)
-                    / len(query.attempts[-1].intended_plan)
-                )
-
-        return round(mean(exec_best_attempt_query), 2)
-
-    @property
-    def partial_executability_mean(self) -> Union[float, None]:
-        if not self.online_strategy:
-            return None
-        avg_exec_per_query = []
-        for q_eval in self.query_evaluations:
-            attempts = []
-            for att in q_eval.attempts:
-                if len(att.intended_plan) == 0:
-                    # JSON could not be parsed for LLM outputted plan
-                    attempts.append(0)
-                else:
-                    attempts.append(len(att.executed_plan) / len(att.intended_plan))
-            if len(attempts) == 0:
-                avg_exec_per_query.append(0)
-            else:
-                avg_exec_per_query.append(mean(attempts))
-        return round(mean(avg_exec_per_query), 2)
-
-    @property
     def count_errors(self) -> dict[str, int]:
-        attempts_errors: list[Optional[dict]] = [
-            att.error
+        attempts_errors = [
+            attempt.error
             for query in self.query_evaluations
-            for att in query.attempts
-            if att.error
+            for attempt in query.attempts
+            if attempt.error
         ]
-        return Counter([(err["code"], err["taxonomy"]) for err in attempts_errors])
+        return dict(Counter([err.code.name for err in attempts_errors]))
 
     @property
     def mean_tokens(self) -> float:
@@ -288,7 +247,7 @@ class LLMPlannerResult(BaseModel):
             return None
         return floor(mean(successful))
 
-    def compute_metrics(self) -> dict[str, Union[float, int, None]]:
+    def compute_metrics(self) -> dict[str, float | int | None]:
         all_metrics = {}
         for metric in self.METRICS:
             output_metric = getattr(self, metric)

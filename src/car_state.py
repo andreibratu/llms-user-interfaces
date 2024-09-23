@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import dict, list, Literal, Optional
+from typing import Literal, Optional, dict, list
 
 from pydantic import BaseModel, Field
 

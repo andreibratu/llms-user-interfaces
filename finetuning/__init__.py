@@ -1,15 +1,14 @@
 import json
 import os
-from pathlib import Path
 import random
 import time
+from pathlib import Path
 
 from openai import OpenAI
-from openai.types.fine_tuning import FineTuningJob
 from openai.types import FileObject
+from openai.types.fine_tuning import FineTuningJob
 
 from src.configuration import APP_CONFIG
-
 
 random.seed(APP_CONFIG.experiment.random_seed)
 

@@ -1,9 +1,9 @@
-from typing import dict, list, Union
+from typing import Union, dict, list
 
 import requests
 
 from src.configuration import APP_CONFIG
-from src.tool.tool_cache import TOOL_CACHE
+from src.tool import TOOL_CACHE
 
 
 @TOOL_CACHE.cache

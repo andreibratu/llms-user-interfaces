@@ -1,13 +1,13 @@
 import difflib
 import json
 import random
-from typing import dict, list, Literal, Optional, tuple
+from typing import Literal, Optional, dict, list, tuple
 
 from src.car_state import CarState
 from src.dataset import read_seed_dataset
 from src.domain import Metadata, PlanFormat
 from src.llm import LLMInterface, LLMMessage
-from src.plan.domain import PlanStep, Transition, PlanType
+from src.plan.domain import PlanStep, PlanType, Transition
 from src.plan.exceptions import BenchmarkException
 from src.prompts import get_system_prompt
 from src.strategy.base import PlannerStrategy

@@ -1,6 +1,7 @@
+from llm.base import LLMInterface
+
 from src.car_state import CarState
 from src.configuration import AppConfig
-from llm.base import LLMInterface
 
 CAR_STATE = CarState.get_default()
 

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import list, Optional, tuple
+from typing import Optional, list, tuple
 
 from overrides import overrides
 

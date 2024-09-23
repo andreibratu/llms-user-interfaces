@@ -1,9 +1,8 @@
-from typing import dict, list, Union
-
-from pydantic import BaseModel, ConfigDict
+from typing import Union, dict, list
 
 from plan.domain import PlanStep, Transition
 from plan.exceptions import BenchmarkException
+from pydantic import BaseModel, ConfigDict
 
 
 class ExecutorOkFeedback(BaseModel):

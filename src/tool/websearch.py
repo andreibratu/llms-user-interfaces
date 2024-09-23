@@ -1,7 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
-from typing import dict, list
 
-import nltk
 import requests
 from langchain.docstore.document import Document as LangchainDocument
 from langchain_community.document_transformers import Html2TextTransformer
@@ -12,7 +10,7 @@ from sumy.nlp.tokenizers import Tokenizer
 from sumy.parsers.plaintext import PlaintextParser
 from sumy.summarizers.lsa import LsaSummarizer
 
-from src.configuration import APP_CONFIG
+import src.session as SESSION
 
 _OPTIONS = Options()
 _OPTIONS.add_argument("--headless=new")
@@ -26,7 +24,7 @@ _TRANSFORMER = Html2TextTransformer()
 _SELENIUM_WORKERS: list[webdriver.Chrome] = []
 
 
-def _fetch_url(args) -> str:
+def _fetch_url(args) -> str | None:
     idx, url = args
     worker: webdriver.Chrome = _SELENIUM_WORKERS[idx % _WORKERS]
     worker.get(url)
@@ -39,8 +37,8 @@ def google_search(query: str) -> list[dict]:
     response = requests.get(
         "https://www.googleapis.com/customsearch/v1",
         params={
-            "key": APP_CONFIG.google.custom_search_api_key,
-            "cx": APP_CONFIG.google.custom_search_engine_id,
+            "key": SESSION.APP_CONFIG.google.custom_search_api_key,
+            "cx": SESSION.APP_CONFIG.google.custom_search_engine_id,
             "q": query,
         },
     )

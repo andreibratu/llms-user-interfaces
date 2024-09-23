@@ -3,10 +3,9 @@ import os
 import re
 from pathlib import Path
 
-from src.configuration import APP_CONFIG
 from src.llm import LLMMessage
 from src.prompts import get_system_prompt
-
+import src.session as SESSION
 
 seed_evaluations_dir = Path(__file__).parent.joinpath("data", "seed_evaluate")
 finetune_dir = Path(__file__).parent.joinpath("data", "finetune")
@@ -237,6 +236,7 @@ def _fill_tool_op(collection: list, tool_text: str, plan_mode: str):
             return fn_call["tool_name"], fn_call["args"]
         args = {}
         args_mt = re.search(r"node \[ id \d+ function \"(.+)\" (.*) *\]", tool_text)
+        assert args_mt, "Tool text should have function name and args"
         fn_name = args_mt[1]
         if args_mt[2]:
             # We also have args
@@ -328,7 +328,7 @@ def _build_tool_bert_finetuning_dataset(plan_mode: str, dataset: dict):
                         )
 
                 tool_slice = [tool["raw_plan_text"] for tool in tools[i : j + 1]]
-                if len(tool_slice) > APP_CONFIG.experiment.max_tool_slice_size:
+                if len(tool_slice) > SESSION.APP_CONFIG.experiment.max_tool_slice_size:
                     # Context window might be too large
                     continue
 
@@ -423,7 +423,7 @@ if __name__ == "__main__":
     os.makedirs(baseline_finetune_dir, exist_ok=True)
     os.makedirs(tool_bert_finetune_dir, exist_ok=True)
 
-    for mode in APP_CONFIG.experiment.plan_output_mode:
+    for mode in SESSION.APP_CONFIG.experiment.plan_output_mode:
         seed_mode_ds = seed_evaluations_dir.joinpath(f"{mode}.json")
 
         with open(seed_mode_ds, "r", encoding="utf-8") as fp:

@@ -19,7 +19,6 @@ from src.strategy.generate.generate_blind import GenerateBlindOffline
 from src.strategy.generate.generate_strategy import GenerateStrategy
 from src.strategy.retry import RetryStrategy, TryManyTimes
 
-
 random.seed(SESSION.APP_CONFIG.experiment.random_seed)
 
 

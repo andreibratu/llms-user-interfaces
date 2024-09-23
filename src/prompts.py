@@ -39,7 +39,8 @@ _BASE_PLAN_PROMPT_SYS = (
 )
 
 _JSON_LIST_PLAN_SYS = (
-    _BASE_PLAN_PROMPT_SYS + " Tool calls are represented as JSON objects. Results stored "
+    _BASE_PLAN_PROMPT_SYS
+    + " Tool calls are represented as JSON objects. Results stored "
     "in memory can be called using the pattern $NAME_OF_MEMORY$ anywhere "
     "in other function arguments and the stored value will be used "
     "instead of the placeholder. "
@@ -69,6 +70,7 @@ _GML_PLAN_REASON_EDGE_PROMPT_SYS = (
     _GML_PLAN_REASON_PROMPT_SYS
     + " You will motivate the existence of each edge using a 'reason' attribute. "
 )
+
 
 def get_system_prompt(plan_mode: str, use_tool_schema: bool = True) -> str:
     prompt = {
