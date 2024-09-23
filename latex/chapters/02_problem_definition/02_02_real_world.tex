@@ -1,0 +1,37 @@
+\section{Experimental Setup}
+
+\subsection{Simulating a Well-Defined System}
+
+This work examines a cyber-physical system where a language agent manages the cockpit functionalities of a car. Following the framework of LLM-powered operating systems \cite{aiasos}, the car's state is controlled through physical inputs, complemented by a voice assistant that converts audio input into natural language queries for the \gls{llm}. The agent is limited to non-mission-critical functions and does not control the car's driving operations. Its capabilities include controlling the climate, media system, cockpit lighting, navigation system, and sending messages as instructed by the user.
+
+\pskip
+
+The system under study follows the constraints of a well-defined problem, with some important exceptions. The user can modify properties like \texttt{speak}, which simulates the model producing output to the user, or \texttt{speak}, where the \gls{llm} communicates with hypothetical contacts by sending text messages on the user's behalf. These properties are included for practical reasons and can be disregarded when quantifying the system's state transitions.
+
+\input{figures/car_state_json}
+
+The agent interacts with the cyber-physical system's state using a defined set of tools. The system is assessed at a software-in-the-loop level, bypassing the physical hardware and instead applying tools to a representation of the car's state. The agent's tools fall into two categories. The first category influences the system's state by controlling physical functions, such as adjusting media volume or interior lighting. The second category interfaces with external systems to provide the agent with additional information, such as weather data, internet searches, or navigation routes.
+
+\pskip
+
+\input{figures/state_transition}
+
+\FloatBarrier
+
+\subsection{Seed Dataset and Execution Plan Format}
+
+To support our study, a UX survey was conducted by human experts on a prototype cyber-physical system powered by a language agent. Based on this trial, three root causes of failure have been empirically identified. The agent struggles with queries involving multiple objectives, queries where execution is conditioned by external factors (e.g., weather), and queries where one tool call depends on the result of a previous call, such as setting car navigation to a venue relevant to the current media playing. Human experts have created 40 test cases to evaluate the language agent on these challenging scenarios. This dataset will henceforth be referred to as the \textbf{seed dataset}.
+
+\pskip
+
+Each datapoint in the seed dataset is a tuple formed by a user query and an execution plan written by a human expert to achieve the goal. An execution plan represents a structured format of the series of tools the model calls to satisfy the user query. Each tool is a function defined in code, which takes input arguments and outputs a result or modifies the state of the car. A well formed execution plan forms an acyclic dependency graph. The model can assign an alphanumeric string to the result of a tool call, to which it can refer to using special syntax. When the plan is executed, we use a lookup table to verify that the  symbol reference by the current tool call exists, and replace its occurrence with its value. The replacement can be done on an entire argument, or just a substring of one. Not all tool steps have to be executed: the language agent can prompt itself to evaluate a string to a boolean value, and execute one of two exclusive paths.
+
+\pskip
+
+\pskip
+
+The seed dataset distinguishes itself by grounding the scope in the sources of error observed during the human trial. Its design further distinguishes itself through explicit execution plans. In general language agents literature, the \gls{llm} prompts itself after each step in order to choose the next tool call. In our study, self-prompt steps are optional and explicit. The reasoning behind this is two-fold. First, it allows to evaluate the language agents on the real-world constraint of latency, which is an important metric for user interfaces. The agent should avoid needless self-prompts wherever possible, relying instead on the lookup mechanism and comprehending how the tools can be fit together. Secondly, it allows us to document the potential points of failure when using LLM-driven interfaces.
+
+\pskip
+
+To realize the design of our experiment, we introduce a third category of tools, deemed meta-tools, which glue together the other tools. Two such tools are presented to the agent: one extracts relevant data from a previous tool call result, and the other chooses an execution path based on the information available to the model. Meta-tools allow the language agent to generate the full plan ahead of time, reducing the number of model calls. In Chapter 3 [TODO], where we benchmark strategies for generating execution plans, we will compare our offline approach of generating the full plan ahead of time to the online approach found in broader language agent literature. When generating plans in an online mode, the model is forbidden from using the meta-tools, instead prompting itself to choose the next tool call.

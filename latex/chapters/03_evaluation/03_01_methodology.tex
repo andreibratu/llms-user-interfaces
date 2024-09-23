@@ -1,0 +1,13 @@
+\section{Methodology}
+
+\subsection{Generating Execution Plans}
+
+Based on the literature review carried out in Chapter 1 [TODO: add reference], we include three generation strategies in our benchmark, in online and offline variants. All strategies present the language agent with the same instruction prompt, instructing the agent that it controls a cyber-physical system on behalf of a human user, presenting the current state of the system and the tools available to it. The meta-tools defined in section 2.2 [TODO: reference] are not presented to the online variants. For each tool it has access to, the agent has access to underlying code and the documentation string that explain how to use the tool.
+
+\pskip
+
+The model is then asked to generate an execution plan in a structured format. Offline strategies generate all tool calls before execution, while online strategies output one tool call at the time, and are provided the intermediate state of the system to use in the next generation step.
+
+\pskip
+
+The baseline generation strategy provides the model with no further instructions and acts as a baseline. The other two strategies implement the CoT and ReACT prompting strategies, which were identified in the literature review. Both strategies attempt to induce reasoning in the language agent by prompting it to break-down the problem to be solved into 

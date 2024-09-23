@@ -1,0 +1,20 @@
+\section{The Oracle Hypothesis}
+
+As iterated during the literature review, \glspl{llm} are capable of approximations of user intent, being capable of ascertaining if the results of an execution plan reflect the query's intent of the system state on par with human experts \cite{zheng2023judgingllmasajudgemtbenchchatbot} \cite{qin2023toolllmfacilitatinglargelanguage}. Plugging this result into our definition of well-defined systems, we introduce the \textbf{oracle hypothesis}.
+
+\pskip
+
+{
+\centering
+\fbox{
+\begin{minipage}{39em}
+
+\textbf{Oracle Hypothesis}: \glspl{llm} are capable judges of user intent, making them able to predict the well-structured state of the system in the final state. In well-defined problems, the language agent fails to satisfy user queries because it cannot observe the impact of a tool call on the state of the system it interfaces with.
+
+\end{minipage}
+}
+}
+
+\pskip
+
+To quantify this hypothesis, the study asks the model to make a prediction on the end state of the system, given its current status and the user query. This prediction will then be checked against the actual state end state of the model. We compute a similarity metric based on the Levanshtein distance between the prediction and the end state. We assumed that the prediction is usable as ground truth, similar to other works on language agent literature [TODO: cite from literature review]. This allows us to evaluate plan generation strategies beyond syntactic correctness and model user intent. We validate the oracle hypothesis on the seed dataset by comparing the similarity metric between the predicted state and the state obtained by executing plans written by human experts. We find high alignment between them, at an average score of \textbf{0.93} [TODO: check again].

@@ -13,7 +13,6 @@ from strategy.notification import NewQueryNotification, StrategyNotification
 
 
 class GenerateReact(GenerateStrategy):
-
     def __init__(self, timeout_generation: int = 120, **kwargs) -> None:
         super().__init__(
             **kwargs,
