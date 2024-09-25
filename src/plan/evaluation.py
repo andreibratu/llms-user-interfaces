@@ -1,20 +1,19 @@
 import difflib
 import json
+from math import floor
 import string
 from collections import Counter
 from functools import cached_property
-from math import floor
 from statistics import mean
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Literal, Optional
 
 import nltk
 from Levenshtein import ratio as levenshtein_ratio
 from nltk.stem import PorterStemmer
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel, ConfigDict, computed_field
 
-import src.session as SESSION
 from src.car_state import CarState
-from src.domain import PlanFormat
+from src.configuration import APP_CONFIG
 from src.plan.domain import PlanStep
 from src.plan.exceptions import BenchmarkException
 
@@ -33,7 +32,7 @@ def _summarize_car_state_for_alignment(
 
     result = {}
     for attribute, value in car_state.items():
-        if attribute in SESSION.APP_CONFIG.experiment.alignment_skip_list:
+        if attribute in APP_CONFIG.experiment.alignment_skip_list:
             result[attribute] = value
             continue
         if isinstance(value, dict):
@@ -64,7 +63,9 @@ class QueryAttempt(BaseModel):
     used_tokens: int = 0
     time_taken_ms: int = 0
     error: BenchmarkException | None = None
-    predicted_state_alignment: Optional[CarState] = None
+    predicted_end_state_alignment: Optional[CarState] = None
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @computed_field
     @cached_property
@@ -97,69 +98,56 @@ class QueryEvaluation(BaseModel):
     def success(self) -> bool:
         return any(att.error is None for att in self.attempts)
 
-    @computed_field
-    @cached_property
-    def alignment_outcome_delta(self) -> Optional[str]:
-        """Compute Git-style difference between predicted outcome and actual car state.
+    def mean_query_alignment_score(
+        self, mode: Literal["successful", "failed", "all"]
+    ) -> float:
+        """Compute alignment metric for all successful, failed or either attempts found in a QueryEvaluation."""
+        query_alignment_scores = []
+        for attempt in self.attempts:
+            if attempt.predicted_end_state_alignment is None:
+                # Failed to predict end state
+                continue
 
-        "minus" lines indicate a value present in prediction but not in real outcome
-        """
-        if (
-            self.attempts[-1].car_states[-1] is None
-            or self.attempts[-1].predicted_state_alignment is None
-        ):
-            return None
+            if mode == "successful" and not attempt.successful:
+                # Skip failed attempts
+                continue
 
-        actual_end_state = json.dumps(
-            self.attempts[-1].car_states[-1].model_dump(),
-            sort_keys=True,
-            indent=0,
-        ).splitlines()
-        predicted_end_state = json.dumps(
-            self.attempts[-1].predicted_state_alignment.model_dump(),
-            sort_keys=True,
-            indent=0,
-        ).splitlines()
+            if mode == "failed" and attempt.successful:
+                # Skip successful attempts
+                continue
 
-        return "\n".join(
-            [
-                diff
-                for diff in _DIFFER.compare(predicted_end_state, actual_end_state)
-                if not diff.startswith(" ")
-            ]
-        )
+            actual_end_state = attempt.car_states[-1].model_dump()
+            predicted_end_state = attempt.predicted_end_state_alignment.model_dump()
 
-    @computed_field
-    @cached_property
-    def alignment_score(self) -> Optional[float]:
-        if (
-            self.attempts[-1].car_states[-1] is None
-            or self.attempts[-1].predicted_state_alignment is None
-        ):
-            return None
+            actual_end_state = _summarize_car_state_for_alignment(actual_end_state)
+            predicted_end_state = _summarize_car_state_for_alignment(
+                predicted_end_state
+            )
 
-        actual_end_state = self.attempts[-1].car_states[-1].model_dump()
-        predicted_end_state = self.attempts[-1].predicted_state_alignment.model_dump()
+            actual_end_state = json.dumps(
+                actual_end_state, sort_keys=True, ensure_ascii=False
+            )
+            predicted_end_state = json.dumps(
+                predicted_end_state, sort_keys=True, ensure_ascii=False
+            )
 
-        actual_end_state = _summarize_car_state_for_alignment(actual_end_state)
-        predicted_end_state = _summarize_car_state_for_alignment(predicted_end_state)
-
-        actual_end_state = json.dumps(actual_end_state, sort_keys=True)
-        predicted_end_state = json.dumps(predicted_end_state, sort_keys=True)
-
-        return levenshtein_ratio(actual_end_state, predicted_end_state)
+            query_alignment_scores.append(
+                levenshtein_ratio(actual_end_state, predicted_end_state)
+            )
+        if len(query_alignment_scores) == 0:
+            return 0
+        return mean(query_alignment_scores)
 
 
 class LLMPlannerResult(BaseModel):
     identifier: str
-    plan_format: PlanFormat
     num_demonstrations: int
-    use_alignment_prediction: bool
     error_feedback_strategy: str
     is_online_strategy: bool
-    strategy_name: str
-    llm_name: str
-    wire_producers: Optional[str]
+    plan_format: str
+    finetuning_strategy: str
+    generation_strategy_name: str
+    retry_strategy_name: str
     retry_times: int
     query_evaluations: list[QueryEvaluation]
 
@@ -167,11 +155,7 @@ class LLMPlannerResult(BaseModel):
         "success_rate",
         "mean_tokens",
         "mean_execution_time",
-        "mean_success_tokens",
-        "mean_success_time",
         "mean_alignment_dist",
-        "alignment_success_percentage_viable",
-        "alignment_percentage_viable",
         "mean_plan_size",
     ]
 
@@ -185,17 +169,6 @@ class LLMPlannerResult(BaseModel):
         return ok / total
 
     @property
-    def mean_plan_size(self) -> Optional[float]:
-        lengths = [
-            len(att.executed_plan)
-            for query in self.query_evaluations
-            for att in query.attempts
-        ]
-        if len(lengths) == 0:
-            return None
-        return mean(lengths)
-
-    @property
     def count_errors(self) -> dict[str, int]:
         attempts_errors = [
             attempt.error
@@ -206,16 +179,27 @@ class LLMPlannerResult(BaseModel):
         return dict(Counter([err.code.name for err in attempts_errors]))
 
     @property
+    def mean_plan_size(self) -> float | None:
+        lengths = [
+            len(att.executed_plan)
+            for query in self.query_evaluations
+            for att in query.attempts
+        ]
+        if len(lengths) == 0:
+            return None
+        return mean(lengths)
+
+    @property
     def mean_tokens(self) -> float:
         tokens_per_attempt = [
             att.used_tokens for eval in self.query_evaluations for att in eval.attempts
         ]
         if len(tokens_per_attempt) == 0:
             return 0
-        return round(mean(tokens_per_attempt), 2)
+        return float(mean(tokens_per_attempt))
 
     @property
-    def mean_execution_time(self) -> float:
+    def mean_execution_time(self) -> int:
         time_per_attempt = [
             att.time_taken_ms
             for eval in self.query_evaluations
@@ -223,29 +207,7 @@ class LLMPlannerResult(BaseModel):
         ]
         if len(time_per_attempt) == 0:
             return 0
-        return round(mean(time_per_attempt), 2)
-
-    @property
-    def mean_success_tokens(self) -> Optional[float]:
-        successful = [
-            eval.attempts[-1].used_tokens
-            for eval in self.query_evaluations
-            if eval.success
-        ]
-        if len(successful) == 0:
-            return None
-        return floor(mean(successful))
-
-    @property
-    def mean_success_time(self) -> Optional[float]:
-        successful = [
-            eval.attempts[-1].time_taken_ms
-            for eval in self.query_evaluations
-            if eval.success
-        ]
-        if len(successful) == 0:
-            return None
-        return floor(mean(successful))
+        return floor(mean(time_per_attempt))
 
     def compute_metrics(self) -> dict[str, float | int | None]:
         all_metrics = {}
@@ -258,53 +220,26 @@ class LLMPlannerResult(BaseModel):
         return all_metrics
 
     @property
-    def alignment_percentage_viable(self) -> float:
+    def mean_alignment_dist(self) -> dict[str, float]:
         """
-        Ratio of pairs where the (actual_state, alignment_predicted)
-        are both non-null out of all evaluations.
+        Compute alignment metric for all successful, failed or either attempts found in a PlannerResult.
         """
-        criteria_count = sum(
-            1
-            for eval in self.query_evaluations
-            if len(eval.attempts[-1].car_states) != 0
-            and eval.attempts[-1].predicted_state_alignment
-        )
-        return criteria_count / len(self.query_evaluations)
-
-    @property
-    def alignment_success_percentage_viable(self) -> float:
-        """
-        Ratio of pairs where the (actual_state, alignment_predicted)
-        are both non-null in successful evaluations out of all evaluations.
-
-        Should mismatch with the success rate of the alignment state
-        prediction function returns null.
-        """
-        criteria_count = sum(
-            1
-            for eval in self.query_evaluations
-            if eval.success and eval.attempts[-1].predicted_state_alignment
-        )
-        return criteria_count / len(self.query_evaluations)
-
-    @property
-    def mean_alignment_dist(self) -> dict[str, Optional[float]]:
-        """Compute alignment over all queries. For failed queries, will use the state
-        of the last attempt (assumed to be best since feedback was received on
-        past mistakes), and the latest car state of that query.
-        """
-        alignment_scores = []
+        alignment_scores_all = []
         alignment_scores_success = []
+        alignment_scores_failed = []
         for q_eval in self.query_evaluations:
-            if q_eval.alignment_score is not None:
-                if q_eval.success:
-                    alignment_scores_success.append(q_eval.alignment_score)
-                alignment_scores.append(q_eval.alignment_score)
-        if len(alignment_scores) == 0:
-            return {"mean_alignment_all": None, "mean_alignment_success": None}
+            if q_eval.mean_query_alignment_score is not None:
+                alignment_scores_all.append(
+                    q_eval.mean_query_alignment_score(mode="all")
+                )
+                alignment_scores_failed.append(
+                    q_eval.mean_query_alignment_score(mode="failed")
+                )
+                alignment_scores_success.append(
+                    q_eval.mean_query_alignment_score(mode="successful")
+                )
         return {
-            "mean_alignment_all": mean(alignment_scores),
-            "mean_alignment_success": mean(
-                [score for score in alignment_scores if score is not None]
-            ),
+            "mean_alignment_all": mean(alignment_scores_all),
+            "mean_alignment_success": mean(alignment_scores_success),
+            "mean_alignment_failed": mean(alignment_scores_failed),
         }

@@ -1,4 +1,6 @@
-from typing import Any, Literal, Optional, dict, list
+"""Abstraction over how different LLM providers"""
+
+from typing import Any, Literal
 
 from pydantic import BaseModel, field_validator
 
@@ -6,8 +8,8 @@ from src.domain import Metadata
 
 
 class LLMResponse(BaseModel):
-    text: Optional[str] = ""
-    tokens: int
+    text: str = ""
+    tokens: int  # Total tokens used until this point
     metadata: dict[str, Any]
 
     @field_validator("text")
@@ -22,8 +24,18 @@ class LLMMessage(BaseModel):
 
 
 class LLMInterface:
+    finetuning_strategy: Literal["none", "baseline", "toolbert"]
+
+    def __init__(
+        self,
+        finetuning_strategy: Literal["none", "baseline", "toolbert"],
+    ) -> None:
+        self.finetuning_strategy = finetuning_strategy
+
     def invoke(
-        self, messages: list[LLMMessage], **kwargs: dict[str, Any]
+        self,
+        messages: list[LLMMessage],
+        **kwargs: int | float | str,
     ) -> LLMResponse:
         raise NotImplementedError
 

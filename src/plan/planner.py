@@ -2,28 +2,34 @@ import hashlib
 import json
 from copy import deepcopy
 from time import perf_counter
-from typing import Generator, Optional, list
+from typing import Generator
 
-from plan.domain import (
+from pydantic import ValidationError
+
+from src.car_state import CarState
+from src.domain import Metadata, PlanFormat
+from src.llm import LLMInterface, LLMMessage
+from src.plan.domain import (
+    GeneratedPlanStep,
     PlanFailureExecutorNotification,
     PlannerOutput,
     PlanRetryExecutorNotification,
     PlanStep,
     PlanSuccessExecutorNotification,
-    PlanType,
 )
-from plan.evaluation import QueryAttempt, QueryEvaluation
-from plan.exceptions import MisgeneratedPlanException
-from plan.feedback import (
+from src.plan.evaluation import QueryAttempt, QueryEvaluation
+from src.plan.exceptions import MisgeneratedPlanException
+from src.plan.feedback import (
     ExecutorFailureFeedback,
     ExecutorFeedback,
     ExecutorOkFeedback,
     ExecutorRunBranch,
+    ExecutorSkipBranch,
 )
-from plan.parse import llm_text_to_json, parse_gml_llm_plan, parse_json_llm_plan
-from pydantic import ValidationError
-from strategy.generate.generate_strategy import GenerateStrategy
-from strategy.notification import (
+from src.plan.parse import llm_text_to_json, parse_gml_llm_plan, parse_json_llm_plan
+from src.prompts import DEFAULT_LLM_HYPERS
+from src.strategy.generate import GenerateStrategy
+from src.strategy.notification import (
     ExceptionNotification,
     InstructionToExecuteNotification,
     NewQueryNotification,
@@ -32,20 +38,17 @@ from strategy.notification import (
     PlanRetryStrategyNotification,
     StrategyNotification,
 )
-from strategy.retry import RetryStrategy
-from tool.tools import get_current_date, weather_tool
-
-from src.car_state import CarState
-from src.domain import Metadata, PlanFormat
-from src.llm import LLMInterface, LLMMessage
-from src.prompts import DEFAULT_LLM_HYPERS
+from src.strategy.retry import RetryStrategy
+from src.tool.tools import get_current_date, weather_tool
 
 
 class PlannerInterface:
+    """Generate an execution plan for an user query."""
+
     def __init__(self, llm: LLMInterface) -> None:
-        self._evaluation: QueryEvaluation = None
-        self._feedback: ExecutorFeedback = None
-        self._curr_attempt: QueryAttempt = None
+        self._evaluation: QueryEvaluation | None = None
+        self._feedback: ExecutorFeedback | None = None
+        self._curr_attempt: QueryAttempt | None = None
         self._attempts: list[QueryAttempt] = []
         self.llm = llm
 
@@ -58,7 +61,8 @@ class PlannerInterface:
         assert self._evaluation, "Planner has not finished."
         return self._evaluation
 
-    def _get_feedback(self) -> Optional[ExecutorFeedback]:
+    def _get_feedback(self) -> ExecutorFeedback | None:
+        assert self._feedback, "Executor should have sent feedback at this point"
         ret_val = self._feedback.model_copy()
         self._feedback = None
         return ret_val
@@ -66,7 +70,7 @@ class PlannerInterface:
     def post_feedback(self, feedback: ExecutorFeedback) -> None:
         self._feedback = feedback
 
-    def make_plan(self, query: str) -> Generator[PlannerOutput, None, None]:
+    def make_plan(self, query: str) -> Generator[PlannerOutput, None, str]:
         raise NotImplementedError
 
     _ALIGNMENT_SYSTEM_PROMPT = (
@@ -89,9 +93,9 @@ class PlannerInterface:
     )
 
     @classmethod
-    def _predict_endstate_for_alignment(
+    def _predict_end_state_for_alignment(
         cls, query: str, oracle_llm: LLMInterface
-    ) -> Optional[CarState]:
+    ) -> CarState | None:
         err, err_count = "", 0
         errors: list[LLMMessage] = []
         # Try multiple times to generate the prediction
@@ -135,13 +139,16 @@ class PlannerInterface:
 
 
 class SeedPlanner(PlannerInterface):
-    """Dummy planner for evaluating seed examples that are human annotated."""
+    """Dummy planner for evaluating seed examples that are human annotated.
+
+    Instead of generating a plan, it injects the human annotated plan.
+    """
 
     def __init__(self, llm: LLMInterface, mode: PlanFormat) -> None:
         super().__init__(llm)
         self._mode = mode
-        self._query: Optional[str] = None
-        self._plan_text: Optional[str] = None
+        self._query: str | None = None
+        self._plan_text: str | None = None
 
     @property
     def identifier(self) -> str:
@@ -154,13 +161,13 @@ class SeedPlanner(PlannerInterface):
     def post_feedback(self, feedback: ExecutorFeedback) -> None:
         self._feedback = feedback
 
-    def make_plan(self, query: str) -> Generator[PlannerOutput, None, None]:
+    def make_plan(self, query: str) -> Generator[PlannerOutput, None, str]:
         assert (
             self._query is not None and self._plan_text is not None
         ), "Inject query and plan text before calling make_plan"
         assert self._query == query, "Query should match injected query"
         self._evaluation = None
-        predicted_state_alignment = self._predict_endstate_for_alignment(
+        predicted_state_alignment = self._predict_end_state_for_alignment(
             query, self.llm
         )
         plan_raw_text = self._plan_text
@@ -169,16 +176,17 @@ class SeedPlanner(PlannerInterface):
             plan = parse_json_llm_plan(plan_raw_text)
         elif self._mode in ("gml", "gml+r", "gml+r+e"):
             plan = parse_gml_llm_plan(plan_raw_text)
+        else:
+            raise NotImplementedError(f"Unsupported plan format: {self._mode}")
 
         curr_attempt = QueryAttempt(
-            predicted_state_alignment=predicted_state_alignment,
+            predicted_end_state_alignment=predicted_state_alignment,
             car_states=[CarState.get_default()],
             memory_states=[{}],
         )
         curr_attempt.intended_plan = deepcopy(
             [step for step in plan if isinstance(step, PlanStep)]
         )
-        curr_attempt.used_tokens = 0
         curr_attempt.raw_llm_text.append(plan_raw_text)
 
         while len(plan) != 0:
@@ -189,7 +197,7 @@ class SeedPlanner(PlannerInterface):
             yield step
             feedback = self._get_feedback()
             assert feedback, "Executor should have sent feedback for current step"
-            curr_attempt.time_taken_ms += (perf_counter() - t1) * 1000
+            curr_attempt.time_taken_ms += int((perf_counter() - t1) * 1000)
 
             # Executor failed at running the step
             if isinstance(feedback, ExecutorFailureFeedback):
@@ -211,16 +219,18 @@ class SeedPlanner(PlannerInterface):
                 plan = [*feedback.steps, *plan]
                 continue
 
+        curr_attempt.used_tokens = 0
         self._evaluation = QueryEvaluation(
             query=query, attempts=[curr_attempt.model_copy()]
         )
         assert self._evaluation.success, "Seed examples should always succeed"
         yield PlanSuccessExecutorNotification()
-        yield
         return "Planner has issued InstructionFinish() already"
 
 
 class LLMPlanner(PlannerInterface):
+    """Generate an execution plan for an user query using LLM."""
+
     def __init__(
         self,
         retry_strategy: RetryStrategy,
@@ -230,20 +240,24 @@ class LLMPlanner(PlannerInterface):
         super().__init__(llm)
         self.retry_strategy = retry_strategy
         self.generator_strategy = generation_strategy
-        self._feedback: ExecutorFeedback = None
+        self._feedback: ExecutorFeedback | None = None
 
     @property
     def metadata(self) -> Metadata:
         return {
-            "generator": self.generator_strategy.metadata(),
-            "retry": self.retry_strategy.metadata(),
-            "llm": self.llm.metadata(),
+            **self.generator_strategy.metadata(),
+            **self.retry_strategy.metadata(),
         }
 
     @property
     def identifier(self) -> str:
+        """Unique identifier for the planner. Used to avoid re-evaluating the same configuration."""
         hash_f = hashlib.sha1()
-        hash_f.update(json.dumps(self.metadata, sort_keys=True).encode("utf-8"))
+        hash_f.update(
+            json.dumps(self.metadata, sort_keys=True, ensure_ascii=False).encode(
+                "utf-8"
+            )
+        )
         return hash_f.hexdigest()
 
     def post_feedback(self, feedback: ExecutorFeedback) -> None:
@@ -259,9 +273,9 @@ class LLMPlanner(PlannerInterface):
         self.retry_strategy.notify(notification)
 
     # pylint: disable=too-many-statements
-    def make_plan(self, query: str) -> Generator[PlannerOutput, None, None]:
+    def make_plan(self, query: str) -> Generator[PlannerOutput, None, str]:
         self._evaluation = None
-        predicted_state_alignment = self._predict_endstate_for_alignment(
+        predicted_state_alignment = self._predict_end_state_for_alignment(
             query, self.llm
         )
         self._notify_strategies(
@@ -274,31 +288,29 @@ class LLMPlanner(PlannerInterface):
         while self.retry_strategy.should_retry() and not any(
             att.error is None for att in attempts
         ):
-            plan: PlanType = []
-            curr_attempt = QueryAttempt(
-                predicted_state_alignment=predicted_state_alignment,
+            plan: GeneratedPlanStep = []
+            current_attempt = QueryAttempt(
+                predicted_end_state_alignment=predicted_state_alignment,
                 car_states=[CarState.get_default()],
                 memory_states=[{}],
             )
 
+            t1 = perf_counter()
             try:
                 # Generate initial plan
-                t1 = perf_counter()
-                raw_llm_text, plan, tokens = self.generator_strategy.generate()
-                curr_attempt.time_taken_ms += (perf_counter() - t1) * 1000
+                raw_llm_text, plan = self.generator_strategy.generate()
+                current_attempt.time_taken_ms += int((perf_counter() - t1) * 1000)
                 # Do not copy conditional branches, they will be
                 # added as we go to the intended plan
-                curr_attempt.intended_plan = deepcopy(
+                current_attempt.intended_plan = deepcopy(
                     [step for step in plan if isinstance(step, PlanStep)]
                 )
-                curr_attempt.used_tokens += tokens
-                curr_attempt.raw_llm_text.append(raw_llm_text)
+                current_attempt.raw_llm_text.append(raw_llm_text)
             except MisgeneratedPlanException as err:
-                curr_attempt.time_taken_ms += (perf_counter() - t1) * 1000
-                if hasattr(err, "tokens"):
-                    curr_attempt.used_tokens += err.tokens
-                curr_attempt.error = err.__dict__
-                attempts.append(curr_attempt.model_copy())
+                current_attempt.time_taken_ms += int((perf_counter() - t1) * 1000)
+                current_attempt.error = err
+                current_attempt.used_tokens = self.generator_strategy.used_tokens
+                attempts.append(current_attempt.model_copy())
                 self._notify_strategies(ExceptionNotification(exception=err))
                 self._notify_strategies(PlanRetryStrategyNotification())
                 yield PlanRetryExecutorNotification()
@@ -312,19 +324,20 @@ class LLMPlanner(PlannerInterface):
                 if isinstance(instruction_step, PlanStep):
                     # Not conditional branch
                     self._notify_strategies(
-                        InstructionToExecuteNotification(instruction=instruction_step)
+                        InstructionToExecuteNotification(step=instruction_step)
                     )
                 # Send instruction to executor and get feedback
                 yield instruction_step
                 feedback = self._get_feedback()
                 assert feedback, "Executor should have sent feedback for current step"
-                curr_attempt.time_taken_ms += (perf_counter() - t1) * 1000
+                current_attempt.time_taken_ms += int((perf_counter() - t1) * 1000)
 
                 # Executor failed at running the step
                 if isinstance(feedback, ExecutorFailureFeedback):
                     # Cancel current attempt
-                    curr_attempt.error = feedback.exception.__dict__
-                    attempts.append(curr_attempt)
+                    current_attempt.error = feedback.exception
+                    current_attempt.used_tokens = self.generator_strategy.used_tokens
+                    attempts.append(current_attempt)
                     self._notify_strategies(
                         ExceptionNotification(exception=feedback.exception)
                     )
@@ -334,12 +347,12 @@ class LLMPlanner(PlannerInterface):
 
                 # Executor succeeded at running the step
                 if isinstance(feedback, ExecutorOkFeedback):
-                    curr_attempt.executed_plan.append(feedback.step.model_copy())
-                    curr_attempt.car_states.append(feedback.transition.new_state)
-                    curr_attempt.tool_output.append(
+                    current_attempt.executed_plan.append(feedback.step.model_copy())
+                    current_attempt.car_states.append(feedback.transition.new_state)
+                    current_attempt.tool_output.append(
                         (feedback.step.tool_name, feedback.tool_output)
                     )
-                    curr_attempt.memory_states.append(feedback.transition.new_memory)
+                    current_attempt.memory_states.append(feedback.transition.new_memory)
                     self._notify_strategies(
                         OkStrategyNotification(
                             step=feedback.step,
@@ -351,8 +364,14 @@ class LLMPlanner(PlannerInterface):
                 # Executor decided to execute a conditional branch
                 if isinstance(feedback, ExecutorRunBranch):
                     # Executor wants to pursue branch, add steps to buffer
-                    curr_attempt.intended_plan.extend(feedback.steps)
+                    current_attempt.intended_plan.extend(feedback.steps)
+                    self.generator_strategy.used_tokens += feedback.tokens
                     plan = [*feedback.steps, *plan]
+                    continue
+
+                if isinstance(feedback, ExecutorSkipBranch):
+                    # Executor wants to skip branch
+                    self.generator_strategy.used_tokens += feedback.tokens
                     continue
 
                 # Allow the strategy to amend steps if online strategy
@@ -361,26 +380,24 @@ class LLMPlanner(PlannerInterface):
                     (
                         raw_llm_text,
                         plan_extension,
-                        tokens,
                     ) = self.generator_strategy.update()
-                    curr_attempt.time_taken_ms += (perf_counter() - t1) * 1000
+                    current_attempt.time_taken_ms += int((perf_counter() - t1) * 1000)
                     plan.extend(plan_extension)
-                    curr_attempt.intended_plan.extend(
+                    current_attempt.intended_plan.extend(
                         [step for step in plan_extension if isinstance(step, PlanStep)]
                     )
-                    curr_attempt.used_tokens += tokens
-                    curr_attempt.raw_llm_text.append(raw_llm_text)
+                    current_attempt.raw_llm_text.append(raw_llm_text)
                 except MisgeneratedPlanException as err:
-                    curr_attempt.error = err.__dict__
-                    curr_attempt.used_tokens += err.tokens
-                    attempts.append(curr_attempt.model_copy())
+                    current_attempt.error = err
+                    attempts.append(current_attempt.model_copy())
                     self._notify_strategies(ExceptionNotification(exception=err))
                     self._notify_strategies(PlanRetryStrategyNotification())
                     yield PlanRetryExecutorNotification()
                     continue
 
             # Either steps were finished or executor signaled failure
-            attempts.append(curr_attempt)
+            current_attempt.used_tokens = self.generator_strategy.used_tokens
+            attempts.append(current_attempt)
 
         assert len(attempts) != 0
         # TODO: Change generation to have llm_text upfront
@@ -389,10 +406,9 @@ class LLMPlanner(PlannerInterface):
             self._notify_strategies(PlanFailureStrategyNotification())
         yield (
             PlanSuccessExecutorNotification()
-            if self._evaluation.success()
+            if self._evaluation.success
             else PlanFailureExecutorNotification()
         )
 
         # Calling next() after this point will result in failure
-        yield
         return "Planner has issued InstructionFinish() already"

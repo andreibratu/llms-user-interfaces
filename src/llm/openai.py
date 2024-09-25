@@ -1,9 +1,10 @@
-from typing import Any
+"""OpenAI API interface for the LLM model."""
+
+from typing import Any, Literal
 
 from httpx import HTTPStatusError
 from openai import BadRequestError, OpenAI
 from openai.types.chat import ChatCompletion
-from plan.exceptions import BenchmarkException, ExceptionCode
 from tenacity import (
     retry,
     retry_if_not_exception_type,
@@ -11,14 +12,18 @@ from tenacity import (
     wait_random_exponential,
 )
 
-import src.session as SESSION
+from src.configuration import APP_CONFIG
 from src.domain import Metadata
 from src.llm import LLMInterface, LLMMessage, LLMResponse
+from src.plan.exceptions import BenchmarkException, ExceptionCode
 
 
 class OpenAILLM(LLMInterface):
-    def __init__(self, model: str) -> None:
-        self._client = OpenAI(api_key=SESSION.APP_CONFIG.openai.api_key)
+    def __init__(
+        self, model: str, finetuning_strategy: Literal["none", "baseline", "toolbert"]
+    ) -> None:
+        super().__init__(finetuning_strategy=finetuning_strategy)
+        self._client = OpenAI(api_key=APP_CONFIG.openai.api_key)
         self._model = model
 
     @property
@@ -30,7 +35,7 @@ class OpenAILLM(LLMInterface):
 
     @retry(
         retry=retry_if_not_exception_type(BenchmarkException),
-        wait=wait_random_exponential(min=1, max=SESSION.APP_CONFIG.retry_max_seconds),
+        wait=wait_random_exponential(min=1, max=APP_CONFIG.retry_max_seconds),
         stop=stop_after_attempt(5),
     )
     def invoke(
@@ -43,6 +48,7 @@ class OpenAILLM(LLMInterface):
                 **kwargs,  # pyright: ignore [reportArgumentType]
             )
             assistant_text = response.choices[0].message.content
+            assert assistant_text is not None, "Assistant text is empty"
             return LLMResponse(
                 text=assistant_text,
                 metadata={

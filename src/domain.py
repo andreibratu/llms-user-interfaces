@@ -10,7 +10,14 @@ JSONType = str
 
 Metadata = dict[str, Union[dict, list, str, int, float]]
 
+
 PlanFormat = Literal["json", "json+r", "gml", "gml+r", "gml+r+e"]
+
+LLMErrorFeedbackStrategyType = Literal[
+    "NO_FEEDBACK",
+    "ERROR_TYPE",
+    "ERROR_TYPE+STEP",
+]
 
 
 class Coordinates(BaseModel):

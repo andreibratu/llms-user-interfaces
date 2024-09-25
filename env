@@ -1,0 +1,12 @@
+# TODO: To reproduce, fill in the values for the following variables and rename file to .env
+# Taken from https://platform.openai.com/api-keys
+OPENAI__API_KEY=
+# Taken from https://developers.google.com/custom-search/v1/introduction
+GOOGLE__CUSTOM_SEARCH_API_KEY=
+# Taken from https://programmablesearchengine.google.com/controlpanel/all
+GOOGLE__CUSTOM_SEARCH_ENGINE_ID=
+# Taken from https://console.cloud.google.com/google/maps-apis/credentials
+GOOGLE__MAPS_API_KEY=
+# Taken from https://developer.spotify.com/dashboard/
+SPOTIFY__CLIENT_ID=
+SPOTIFY__CLIENT_SECRET=

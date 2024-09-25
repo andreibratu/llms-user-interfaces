@@ -1,5 +1,3 @@
-from typing import Union, dict, list
-
 import requests
 
 from src.configuration import APP_CONFIG
@@ -22,6 +20,7 @@ def geocode_address(address: str) -> dict:
         params={
             "address": address,
             "key": APP_CONFIG.google.maps_api_key,
+            "latlng": f"{APP_CONFIG.car_status.latitude},{APP_CONFIG.car_status.longitude}",
         },
     )
     first_match = response.json()["results"][0]
@@ -34,7 +33,7 @@ def geocode_address(address: str) -> dict:
 
 
 @TOOL_CACHE.cache
-def get_places(query: str, lat: float, lng: float, radius: int) -> list[dict]:
+def get_places(query: str, lat: float, lng: float, radius: int | float) -> list[dict]:
     response = requests.post(
         "https://places.googleapis.com/v1/places:searchText",
         headers={
@@ -65,8 +64,8 @@ def get_places(query: str, lat: float, lng: float, radius: int) -> list[dict]:
 
 @TOOL_CACHE.cache
 def distance_matrix(
-    origins: Union[list[str], str],
-    destinations: Union[list[str], str],
+    origins: list[str] | str,
+    destinations: list[str] | str,
 ) -> dict[str, dict[str, dict[str, str]]]:
     """
     Compute distance and ETA between multiple origins and destinations.

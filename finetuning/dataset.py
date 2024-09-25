@@ -2,10 +2,11 @@ import json
 import os
 import re
 from pathlib import Path
+from typing import Any
 
+from src.configuration import APP_CONFIG
 from src.llm import LLMMessage
-from src.prompts import get_system_prompt
-import src.session as SESSION
+from src.prompts import get_system_message
 
 seed_evaluations_dir = Path(__file__).parent.joinpath("data", "seed_evaluate")
 finetune_dir = Path(__file__).parent.joinpath("data", "finetune")
@@ -13,7 +14,7 @@ baseline_finetune_dir = finetune_dir.joinpath("baseline")
 tool_bert_finetune_dir = finetune_dir.joinpath("tool_bert")
 
 
-def _build_baseline_finetuning_dataset(plan_mode: str, dataset: dict) -> list:
+def _build_baseline_finetuning_dataset(plan_mode: str, dataset: dict):
     finetune_dataset = []
 
     for _, query_eval in dataset.items():
@@ -23,13 +24,7 @@ def _build_baseline_finetuning_dataset(plan_mode: str, dataset: dict) -> list:
         finetune_dataset.append(
             {
                 "messages": [
-                    LLMMessage(
-                        role="system",
-                        content=get_system_prompt(
-                            plan_mode,
-                            use_tool_schema=False,
-                        ),
-                    ).model_dump(),
+                    get_system_message(plan_mode),
                     LLMMessage(role="user", content=query).model_dump(),
                     LLMMessage(role="assistant", content=llm_plan_output).model_dump(),
                 ]
@@ -40,7 +35,7 @@ def _build_baseline_finetuning_dataset(plan_mode: str, dataset: dict) -> list:
     with open(mode_sft_path, "w", encoding="utf-8") as fp:
         print("baseline", plan_mode, len(finetune_dataset))
         for row in finetune_dataset:
-            fp.write(f"{json.dumps(row, separators=(',', ':'))}\n")
+            fp.write(f"{json.dumps(row, separators=(',', ':'), ensure_ascii=False)}\n")
 
 
 def _unknown_tools_known_end_state_op(
@@ -61,21 +56,15 @@ def _unknown_tools_known_end_state_op(
     if len(changes) == 0:
         return
     messages = [
-        LLMMessage(
-            role="system",
-            content=get_system_prompt(
-                plan_mode,
-                use_tool_schema=False,
-            ),
-        ).model_dump(),
+        get_system_message(plan_mode).model_dump(),
         LLMMessage(
             role="user", content=f"You must solve user query: {query}"
         ).model_dump(),
         LLMMessage(
             role="user",
             content=(
-                f"Car state: {json.dumps(start_car_state, separators=(',', ':'))}; "
-                f"Memory {json.dumps(start_memory, separators=(',', ':'))}"
+                f"Car state: {json.dumps(start_car_state, separators=(',', ':'), ensure_ascii=False)}; "
+                f"Memory {json.dumps(start_memory, separators=(',', ':'), ensure_ascii=False)}"
             ),
         ).model_dump(),
         LLMMessage(
@@ -119,17 +108,15 @@ def _known_tools_missing_end_state_op(
     if len(changes) == 0:
         return
     messages = [
-        LLMMessage(
-            role="system", content=get_system_prompt(plan_mode, use_tool_schema=False)
-        ).model_dump(),
+        get_system_message(plan_mode).model_dump(),
         LLMMessage(
             role="user", content=f"You must solve user query: {query}"
         ).model_dump(),
         LLMMessage(
             role="user",
             content=(
-                f"Car state: {json.dumps(start_car_state, separators=(',', ':'))}; "
-                f"Memory {json.dumps(start_memory, separators=(',', ':'))}"
+                f"Car state: {json.dumps(start_car_state, separators=(',', ':'), ensure_ascii=False)}; "
+                f"Memory {json.dumps(start_memory, separators=(',', ':'), ensure_ascii=False)}"
             ),
         ).model_dump(),
         LLMMessage(
@@ -143,12 +130,17 @@ def _known_tools_missing_end_state_op(
                     [f"{k} {start_car_state[k]} -> {end_car_state[k]}" for k in changes]
                 ),
                 separators=(",", ":"),
+                ensure_ascii=False,
             ),
         ).model_dump(),
         LLMMessage(role="user", content="How does memory change?").model_dump(),
         LLMMessage(
             role="assistant",
-            content=json.dumps(end_memory, separators=(",", ":")),
+            content=json.dumps(
+                end_memory,
+                separators=(",", ":"),
+                ensure_ascii=False,
+            ),
         ).model_dump(),
     ]
     if transient_tool_outputs:
@@ -182,21 +174,15 @@ def _missing_tool_op(
     if len(changes) == 0:
         return
     messages = [
-        LLMMessage(
-            role="system",
-            content=get_system_prompt(
-                plan_mode,
-                use_tool_schema=False,
-            ),
-        ).model_dump(),
+        get_system_message(plan_mode).model_dump(),
         LLMMessage(
             role="user", content=f"You must solve user query: {query}"
         ).model_dump(),
         LLMMessage(
             role="user",
             content=(
-                f"Car state: {json.dumps(start_car_state, separators=(',', ':'))}; "
-                f"Memory {json.dumps(start_memory, separators=(',', ':'))}"
+                f"Car state: {json.dumps(start_car_state, separators=(',', ':'), ensure_ascii=False)}; "
+                f"Memory {json.dumps(start_memory, separators=(',', ':'), ensure_ascii=False)}"
             ),
         ).model_dump(),
         LLMMessage(
@@ -210,7 +196,7 @@ def _missing_tool_op(
         ).model_dump(),
         LLMMessage(
             role="user",
-            content=f"Memory after calling tools: {json.dumps(end_memory, separators=(',', ':'))}",
+            content=f"Memory after calling tools: {json.dumps(end_memory, separators=(',', ':'), ensure_ascii=False)}",
         ).model_dump(),
         LLMMessage(
             role="user",
@@ -230,7 +216,7 @@ def _missing_tool_op(
 
 
 def _fill_tool_op(collection: list, tool_text: str, plan_mode: str):
-    def split_fn_name_args(fn_call_text: str) -> tuple[str, str]:
+    def split_fn_name_args(fn_call_text: str) -> tuple[str, dict[str, Any]]:
         if "json" in plan_mode:
             fn_call = json.loads(fn_call_text)
             return fn_call["tool_name"], fn_call["args"]
@@ -261,13 +247,7 @@ def _fill_tool_op(collection: list, tool_text: str, plan_mode: str):
     collection.append(
         {
             "messages": [
-                LLMMessage(
-                    role="system",
-                    content=get_system_prompt(
-                        plan_mode,
-                        use_tool_schema=False,
-                    ),
-                ).model_dump(),
+                get_system_message(plan_mode).model_dump(),
                 LLMMessage(
                     role="user",
                     content=f"How do you call function {fn_name} with args {args}?",
@@ -280,7 +260,10 @@ def _fill_tool_op(collection: list, tool_text: str, plan_mode: str):
 
 def _format_tools_for_prompt(tools: list, plan_mode: str, full_plan_text: str) -> str:
     if "json" in plan_mode:
-        return " ".join(json.dumps(tool, separators=(",", ":")) for tool in tools)
+        return " ".join(
+            json.dumps(tool, separators=(",", ":"), ensure_ascii=False)
+            for tool in tools
+        )
     # GML plan, add relevant edges
     ids = set()
     for node in tools:
@@ -324,11 +307,13 @@ def _build_tool_bert_finetuning_dataset(plan_mode: str, dataset: dict):
                         del tool_cpy["raw_plan_text"]
                         del tool_cpy["evaluate_condition"]
                         tool["raw_plan_text"] = json.dumps(
-                            tool_cpy, separators=(",", ":")
+                            tool_cpy,
+                            separators=(",", ":"),
+                            ensure_ascii=False,
                         )
 
                 tool_slice = [tool["raw_plan_text"] for tool in tools[i : j + 1]]
-                if len(tool_slice) > SESSION.APP_CONFIG.experiment.max_tool_slice_size:
+                if len(tool_slice) > APP_CONFIG.experiment.max_tool_slice_size:
                     # Context window might be too large
                     continue
 
@@ -411,7 +396,9 @@ def _build_tool_bert_finetuning_dataset(plan_mode: str, dataset: dict):
             encoding="utf-8",
         ) as fp:
             for row in op_collection:
-                fp.write(f"{json.dumps(row, separators=(',', ':'))}\n")
+                fp.write(
+                    f"{json.dumps(row, separators=(',', ':'), ensure_ascii=False)}\n"
+                )
 
 
 if __name__ == "__main__":
@@ -423,7 +410,7 @@ if __name__ == "__main__":
     os.makedirs(baseline_finetune_dir, exist_ok=True)
     os.makedirs(tool_bert_finetune_dir, exist_ok=True)
 
-    for mode in SESSION.APP_CONFIG.experiment.plan_output_mode:
+    for mode in APP_CONFIG.experiment.plan_formats:
         seed_mode_ds = seed_evaluations_dir.joinpath(f"{mode}.json")
 
         with open(seed_mode_ds, "r", encoding="utf-8") as fp:

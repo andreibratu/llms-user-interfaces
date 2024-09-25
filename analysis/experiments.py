@@ -1,7 +1,7 @@
 import pandas as pd
 from scipy.stats import pearsonr
 
-from src.database import METRICS
+from src.report import METRICS
 
 all_metrics = METRICS.find({})
 

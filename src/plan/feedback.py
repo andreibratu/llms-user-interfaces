@@ -1,23 +1,24 @@
-from typing import Union, dict, list
+"""Notifications sent from executor to planner."""
 
-from plan.domain import PlanStep, Transition
-from plan.exceptions import BenchmarkException
 from pydantic import BaseModel, ConfigDict
+
+from src.plan.domain import PlanStep, Transition
+from src.plan.exceptions import BenchmarkException
 
 
 class ExecutorOkFeedback(BaseModel):
     step: PlanStep
-    tool_output: Union[list, dict, str, None]
+    tool_output: str
     transition: Transition
 
 
 class ExecutorRunBranch(BaseModel):
-    tokens: int
+    tokens: int  # Tokens used to decide the conditional
     steps: list[PlanStep]
 
 
 class ExecutorSkipBranch(BaseModel):
-    tokens: int
+    tokens: int  # Tokens used to decide the conditional
 
 
 class ExecutorFailureFeedback(BaseModel):
@@ -25,6 +26,9 @@ class ExecutorFailureFeedback(BaseModel):
     exception: BenchmarkException
 
 
-ExecutorFeedback = Union[
-    ExecutorOkFeedback, ExecutorFailureFeedback, ExecutorRunBranch, ExecutorSkipBranch
-]
+ExecutorFeedback = (
+    ExecutorOkFeedback
+    | ExecutorFailureFeedback
+    | ExecutorRunBranch
+    | ExecutorSkipBranch
+)

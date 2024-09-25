@@ -7,6 +7,7 @@ class ExceptionCode(IntEnum):
     MEMORY = 2
     TOOL_SIGNATURE = 3
     PLAN_GENERATION = 4
+    INVALID_ARGUMENT = 5
 
 
 class BenchmarkException(Exception):
@@ -21,10 +22,9 @@ class BenchmarkException(Exception):
 
 
 class MisgeneratedPlanException(BenchmarkException):
-    def __init__(self, message: str, output: str, tokens: int) -> None:
+    def __init__(self, message: str, output: str) -> None:
         super().__init__(
             code=ExceptionCode.PLAN_GENERATION,
             message=message,
         )
         self.output = output
-        self.tokens = tokens

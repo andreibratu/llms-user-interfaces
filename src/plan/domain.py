@@ -1,25 +1,31 @@
-"""Instructions sent from planner to executor."""
+"""Step sent from planner to executor."""
 
-from typing import Any, Optional, dict
+import typing
+from typing import Any
 
 from pydantic import BaseModel, ValidationError, field_validator
 
-from src.car_state import CarState
+if typing.TYPE_CHECKING:
+    from src.car_state import CarState
 
 
 class Transition(BaseModel):
-    new_state: CarState
+    """Transition from one system state to another."""
+
+    new_state: "CarState"
     new_memory: dict[str, Any]
 
 
 class PlanStep(BaseModel):
-    evaluate_condition: Optional[str] = None
+    """Step sent from planner to executor."""
+
+    evaluate_condition: str | None = None
     tool_name: str
-    raw_plan_text: Optional[str] = None
-    args: Optional[dict[str, Any]] = {}
-    memory: Optional[str] = None
+    raw_plan_text: str | None = None
+    args: dict[str, Any] | None = {}
+    memory: str | None = None
     # Reason required for validation purposes only
-    reason: Optional[str] = None
+    reason: str | None = None
 
     @field_validator("tool_name")
     @classmethod
@@ -39,27 +45,38 @@ class PlanStep(BaseModel):
 
     @field_validator("args")
     @classmethod
-    def validate_args(cls, args: Optional[dict[str, Any]]):
+    def validate_args(cls, args: dict[str, Any] | None):
         if args is None:
             return {}
         if not isinstance(args, dict):
             raise ValidationError(f"Expected None or a dictionary: {args}")
-        # for arg_name, arg_val in args.items():
-        #     if isinstance(arg_val, (list, dict)):
-        #         # Keep arguments simple, LLM should parse them
-        #         args[arg_name] = json.dumps(arg_val)
         return args
 
 
 class PlanRetryExecutorNotification(BaseModel):
+    """Planner requests a retry of the plan from the executor.
+
+    Executor will reset the state and retry the query with a new plan.
+    """
+
     pass
 
 
 class PlanSuccessExecutorNotification(BaseModel):
+    """Executor notifies planner of successful plan execution.
+
+    All steps of a plan have been executed successfully.
+    """
+
     pass
 
 
 class PlanFailureExecutorNotification(BaseModel):
+    """Executor notifies planner of failed plan execution.
+
+    Executor will not retry the query.
+    """
+
     pass
 
 
@@ -72,4 +89,4 @@ PlannerOutput = (
 )
 
 
-PlanType = list[PlanStep | list[PlanStep]]
+GeneratedPlanStep = list[PlanStep | list[PlanStep]]

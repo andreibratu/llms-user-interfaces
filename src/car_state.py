@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Literal, Optional, dict, list
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -25,7 +25,7 @@ class CarSeatsSchema(BaseModel):
 
 
 class MediaControlSchema(BaseModel):
-    now_playing: Optional[str]
+    now_playing: str | None
     playing: bool
     volume: int
 

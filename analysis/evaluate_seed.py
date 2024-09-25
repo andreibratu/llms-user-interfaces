@@ -15,7 +15,7 @@ from src.plan.executor import solve_query
 from src.plan.planner import SeedPlanner
 
 if __name__ == "__main__":
-    LLM = OpenAILLM(SESSION.APP_CONFIG.experiment.openai_model)
+    LLM = OpenAILLM(APP_CONFIG.experiment.openai_model)
     SESSION.LLM = LLM
 
     for mode in APP_CONFIG.experiment.plan_output_mode:

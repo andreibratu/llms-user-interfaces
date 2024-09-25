@@ -10,7 +10,7 @@ from sumy.nlp.tokenizers import Tokenizer
 from sumy.parsers.plaintext import PlaintextParser
 from sumy.summarizers.lsa import LsaSummarizer
 
-import src.session as SESSION
+from src.configuration import APP_CONFIG
 
 _OPTIONS = Options()
 _OPTIONS.add_argument("--headless=new")
@@ -37,8 +37,8 @@ def google_search(query: str) -> list[dict]:
     response = requests.get(
         "https://www.googleapis.com/customsearch/v1",
         params={
-            "key": SESSION.APP_CONFIG.google.custom_search_api_key,
-            "cx": SESSION.APP_CONFIG.google.custom_search_engine_id,
+            "key": APP_CONFIG.google.custom_search_api_key,
+            "cx": APP_CONFIG.google.custom_search_engine_id,
             "q": query,
         },
     )

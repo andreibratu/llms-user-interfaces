@@ -1,4 +1,4 @@
-from typing import Optional, Union, dict, list
+"""Notifications sent from planner to the strategies to inform about the current state of the plan."""
 
 from pydantic import BaseModel, ConfigDict
 
@@ -9,16 +9,16 @@ from src.plan.exceptions import BenchmarkException
 
 class NewQueryNotification(BaseModel):
     query: str
-    alignment_state: Optional[CarState]
+    alignment_state: CarState | None
 
 
 class InstructionToExecuteNotification(BaseModel):
-    instruction: PlanStep
+    step: PlanStep
 
 
 class OkStrategyNotification(BaseModel):
     step: PlanStep
-    tool_output: Union[list, dict, str, None]
+    tool_output: list | dict | str | None
     transition: Transition
 
 
@@ -40,12 +40,12 @@ class PlanFailureStrategyNotification(BaseModel):
     pass
 
 
-StrategyNotification = Union[
-    NewQueryNotification,
-    OkStrategyNotification,
-    ExceptionNotification,
-    InstructionToExecuteNotification,
-    PlanSuccessStrategyNotification,
-    PlanRetryStrategyNotification,
-    PlanFailureStrategyNotification,
-]
+StrategyNotification = (
+    NewQueryNotification
+    | OkStrategyNotification
+    | ExceptionNotification
+    | InstructionToExecuteNotification
+    | PlanSuccessStrategyNotification
+    | PlanRetryStrategyNotification
+    | PlanFailureStrategyNotification
+)

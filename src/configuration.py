@@ -1,6 +1,6 @@
-from typing import Optional
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from src.domain import LLMErrorFeedbackStrategyType, PlanFormat
 
 
 class CarStatus(BaseSettings):
@@ -11,7 +11,7 @@ class CarStatus(BaseSettings):
 
 
 class OpenAIConfig(BaseSettings):
-    api_key: Optional[str] = None
+    api_key: str | None = None
 
 
 class GenerationConfig(BaseSettings):
@@ -21,6 +21,7 @@ class GenerationConfig(BaseSettings):
     presence_penalty: float = 0.2
     top_p: float = 1
     n: int = 1
+    min_machine_instructions_n: int = 2
     rouge_threshold: float = 0.3
     rouge_metrics: list[str] = ["rougeL"]
     timeout_seconds: int = 60
@@ -75,24 +76,28 @@ class GenerationConfig(BaseSettings):
 
 
 class SpotifyConfig(BaseSettings):
-    client_id: Optional[str] = None
-    client_secret: Optional[str] = None
+    client_id: str | None = None
+    client_secret: str | None = None
 
 
 class ExperimentConfig(BaseSettings):
     repeat_experiments: int = 1
     wire_producers: list[bool] = [False, True]
     num_demonstrations: list[int] = [10]
-    feedback_strategies: list[str] = ["ERROR_TYPE+STEP"]
-    retry_times: list[int] = [1]
-    use_alignment_prediction: list[bool] = [True, False]
-    dataset_size: int = 10
-    openai_model: str = "gpt-4o-2024-05-13"
+    feedback_strategies: "list[LLMErrorFeedbackStrategyType]" = [
+        "NO_FEEDBACK",
+        "ERROR_TYPE",
+        "ERROR_TYPE+STEP",
+    ]
+    retry_times: list[int] = [1, 3]
+    dataset_size: int = 5
+    openai_model: str = "gpt-4o-mini-2024-07-18"
     finetune_tool_bert_percentage: float = 1
-    finetune_tool_bert_fill_tool_count: Optional[int] = None
+    finetune_tool_bert_fill_tool_count: int | None = None
     random_seed: int = 42
     max_tool_slice_size: int = 3
-    plan_output_mode: list[str] = ["json", "json+r", "gml", "gml+r", "gml+r+e"]
+    # plan_formats: list[PlanFormat] = ["gml", "json", "json+r", "gml+r"]
+    plan_formats: list[PlanFormat] = ["json"]
     alignment_skip_list: list[str] = [
         "home_address",
         "current_address",
@@ -101,9 +106,9 @@ class ExperimentConfig(BaseSettings):
 
 
 class GoogleConfig(BaseSettings):
-    maps_api_key: Optional[str] = None
-    custom_search_api_key: Optional[str] = None
-    custom_search_engine_id: Optional[str] = None
+    maps_api_key: str | None = None
+    custom_search_api_key: str | None = None
+    custom_search_engine_id: str | None = None
 
 
 class AppConfig(BaseSettings):
@@ -123,3 +128,6 @@ class AppConfig(BaseSettings):
         str_to_lower=True,
         env_nested_delimiter="__",
     )
+
+
+APP_CONFIG = AppConfig()

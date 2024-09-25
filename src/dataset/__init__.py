@@ -1,11 +1,15 @@
 import json
 from pathlib import Path
-from typing import dict, list
 
 
 def read_seed_dataset(plan_format: str) -> dict[str, list[str]]:
     query_plan: dict[str, list[str]] = {}
-    data_dir = Path(__file__).parent.parent.joinpath("data").joinpath("seed_datasets")
+    data_dir = (
+        Path(__file__)
+        .parent.parent.parent.joinpath("data")
+        .joinpath("seed")
+        .joinpath("datasets")
+    )
 
     if plan_format in ("json", "json+r"):
         ds_path = {
@@ -18,7 +22,7 @@ def read_seed_dataset(plan_format: str) -> dict[str, list[str]]:
             query = example["instruction"]
             query_plan[query] = []
             for plan in example["instances"]:
-                query_plan[query].append(json.dumps(plan))
+                query_plan[query].append(json.dumps(plan, ensure_ascii=False))
 
     if plan_format in ("gml", "gml+r", "gml+r+e"):
         ds_path = {

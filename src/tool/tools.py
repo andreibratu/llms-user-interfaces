@@ -2,11 +2,10 @@ import datetime
 import json
 import re
 import typing
-from typing import Literal, Optional, Union, list
+from typing import Literal
 
 import cachetools.func
 import requests
-from plan.exceptions import BenchmarkException, ExceptionCode
 from tenacity import (
     retry,
     retry_if_not_exception_type,
@@ -14,15 +13,16 @@ from tenacity import (
     wait_random_exponential,
 )
 from timezonefinder import TimezoneFinder
-from tool.google_maps import distance_matrix, geocode_address, get_places
-from tool.websearch import internet_scrape
 
 import src.session as SESSION
 from src.car_state import AmbientLightType, CarSeats, DrivingModeType
 from src.configuration import APP_CONFIG
 from src.domain import JSONType
 from src.llm import LLMMessage, LLMResponse
+from src.plan.exceptions import BenchmarkException, ExceptionCode
 from src.tool import TOOL_CACHE
+from src.tool.google_maps import distance_matrix, geocode_address, get_places
+from src.tool.websearch import internet_scrape
 
 SpotifySearch = Literal[
     "album", "artist", "playlist", "track", "show", "episode", "audiobook"
@@ -31,22 +31,18 @@ SpotifySearch = Literal[
 
 def set_ambient_light(light_color: AmbientLightType):
     try:
-        light_color = light_color.lower()
+        light_color = light_color.lower()  # pyright: ignore [reportAssignmentType]
     except Exception as e:
         raise BenchmarkException(
-            tool_name="set_ambient_light",
-            taxonomy="illegal_type",
             code=ExceptionCode.ARGUMENT_VALIDATION,
-            message="Could not parse light_color as string",
+            message="set_ambient_light: Could not parse light_color as string",
         ) from e
     allow_list = typing.get_args(AmbientLightType)
     if light_color not in allow_list:
         raise BenchmarkException(
-            tool_name="set_ambient_light",
-            taxonomy="out_of_enum",
             code=ExceptionCode.ARGUMENT_VALIDATION,
             message=(
-                "light_color argument should be one "
+                "set_ambient_light: light_color argument should be one "
                 f"of the the following: {allow_list}"
             ),
         )
@@ -55,14 +51,12 @@ def set_ambient_light(light_color: AmbientLightType):
 
 def set_driving_mode(driving_mode: DrivingModeType) -> None:
     allow_list = typing.get_args(DrivingModeType)
-    driving_mode = driving_mode.lower()
+    driving_mode = driving_mode.lower()  # pyright: ignore [reportAssignmentType]
     if driving_mode not in allow_list:
         raise BenchmarkException(
-            tool_name="set_driving_mode",
-            taxonomy="out_of_enum",
             code=ExceptionCode.ARGUMENT_VALIDATION,
             message=(
-                "driving_mode arguments should be one "
+                "set_driving_mode: driving_mode arguments should be one "
                 f"of the following: {allow_list}, input was {driving_mode}"
             ),
         )
@@ -70,20 +64,16 @@ def set_driving_mode(driving_mode: DrivingModeType) -> None:
 
 
 def set_temperature(temperature: int, seatzone: CarSeats) -> None:
-    seatzone = seatzone.lower()
+    seatzone = seatzone.lower()  # pyright: ignore [reportAssignmentType]
     if not 18 <= temperature <= 25:
         raise BenchmarkException(
-            tool_name="set_temperature",
-            taxonomy="illegal_value",
             code=ExceptionCode.ARGUMENT_VALIDATION,
-            message="Temperature should be between 18 and 25 inclusive",
+            message="set_temperature: Temperature should be between 18 and 25 inclusive",
         )
     if seatzone not in (cs := typing.get_args(CarSeats)):
         raise BenchmarkException(
-            tool_name="set_temperature",
-            taxonomy="out_of_enum",
             code=ExceptionCode.ARGUMENT_VALIDATION,
-            message=f"seatzone parameter should be one of {cs}",
+            message=f"set_temperature: seatzone parameter should be one of {cs}",
         )
     if seatzone == "all":
         SESSION.CAR_STATE.temperature = SESSION.CAR_STATE.temperature.model_copy(
@@ -113,27 +103,21 @@ def set_window(
     what_window: CarSeats,
 ):
     try:
-        what_window = what_window.lower()
+        what_window = what_window.lower()  # pyright: ignore [reportAssignmentType]
     except Exception as e:
         raise BenchmarkException(
-            tool_name="set_window",
-            taxonomy="illegal_type",
             code=ExceptionCode.ARGUMENT_VALIDATION,
-            message="what_window parameter should be a string",
+            message="set_window: what_window parameter should be a string",
         ) from e
     if not 0 <= window_level <= 100:
         raise BenchmarkException(
-            tool_name="set_window",
-            taxonomy="illegal_value",
             code=ExceptionCode.ARGUMENT_VALIDATION,
-            message="window_level should be between 0 and 100 inclusive",
+            message="set_window: window_level should be between 0 and 100 inclusive",
         )
     if what_window not in (cs := typing.get_args(CarSeats)):
         raise BenchmarkException(
-            tool_name="set_window",
-            taxonomy="out_of_enum",
             code=ExceptionCode.ARGUMENT_VALIDATION,
-            message=f"what_window value should be one of {cs}",
+            message=f"set_window: what_window value should be one of {cs}",
         )
     if what_window == "all":
         SESSION.CAR_STATE.window = SESSION.CAR_STATE.window.model_copy(
@@ -148,10 +132,8 @@ def set_window(
 def media_control_play(playing: bool) -> None:
     if playing not in [True, False]:
         raise BenchmarkException(
-            tool_name="media_control_play",
-            taxonomy="illegal_value",
             code=ExceptionCode.ARGUMENT_VALIDATION,
-            message="playing argument value should be boolean",
+            message="media_control_play: playing argument value should be boolean",
         )
 
     SESSION.CAR_STATE.media_control.playing = playing
@@ -160,10 +142,8 @@ def media_control_play(playing: bool) -> None:
 def media_control_enqueue(media_object: JSONType) -> None:
     if not media_object:
         raise BenchmarkException(
-            tool_name="media_control_enqueue",
-            taxonomy="illegal_value",
             code=ExceptionCode.ARGUMENT_VALIDATION,
-            message="media_object argument should not be null",
+            message="media_control_enqueue: media_object argument should not be null",
         )
     SESSION.CAR_STATE.media_control.now_playing = media_object
     SESSION.CAR_STATE.media_control.playing = True
@@ -174,19 +154,15 @@ def media_control_volume(volume: int) -> None:
         volume = int(volume)
     except TypeError as e:
         raise BenchmarkException(
-            tool_name="media_control_volume",
-            taxonomy="illegal_type",
             code=ExceptionCode.ARGUMENT_VALIDATION,
-            message="Cannot parse volume into an int",
+            message="media_control_volume: Cannot parse volume into an int",
         ) from e
     if volume not in range(0, 101):
         # Should also catch type errors
         raise BenchmarkException(
-            tool_name="media_control_volume",
-            taxonomy="illegal_value",
             code=ExceptionCode.ARGUMENT_VALIDATION,
             message=(
-                "volume should be in the 0 (mute) - 100 (max volume) range inclusive"
+                "media_control_volume: volume should be in the 0 (mute) - 100 (max volume) range inclusive"
             ),
         )
     SESSION.CAR_STATE.media_control.volume = volume
@@ -207,8 +183,8 @@ def get_current_date() -> str:
 @TOOL_CACHE.cache
 def places_tool(
     query: str,
-    location: Optional[str] = None,
-    search_range: Optional[float] = None,
+    location: str | None = None,
+    search_range: float | None = None,
 ) -> JSONType:
     if search_range is None:
         search_range = 20
@@ -225,22 +201,29 @@ def places_tool(
         search_range = max(float(search_range), 50)
     except (TypeError, ValueError) as e:
         raise BenchmarkException(
-            tool_name="places_tool",
-            taxonomy="illegal_type",
             code=ExceptionCode.ARGUMENT_VALIDATION,
-            message=("search_range could not be parsed into a float"),
+            message=("places_tool: search_range could not be parsed into a float"),
         ) from e
 
     if location is None:
         lat = SESSION.CAR_STATE.current_coordinates.lat
         lng = SESSION.CAR_STATE.current_coordinates.lng
     else:
-        response = geocode_address(location)
-        lat = response["latitude"]
-        lng = response["longitude"]
+        try:
+            response = geocode_address(location)
+            lat = response["latitude"]
+            lng = response["longitude"]
+        except Exception as e:
+            raise BenchmarkException(
+                code=ExceptionCode.INVALID_ARGUMENT,
+                message=f"places_tool: Could not geocode the address {location}",
+            ) from e
     radius = search_range * 1000
 
-    return json.dumps(get_places(query, lat, lng, radius))
+    return json.dumps(
+        get_places(query, lat, lng, radius),
+        ensure_ascii=False,
+    )
 
 
 @TOOL_CACHE.cache
@@ -249,14 +232,12 @@ def search_internet(query: str) -> str:
         return internet_scrape(query)
     except Exception as e:
         raise BenchmarkException(
-            "search_internet",
-            code=ExceptionCode.ARGUMENT_VALIDATION,
-            taxonomy="illegal_state",
-            message=str(e),
+            code=ExceptionCode.INVALID_ARGUMENT,
+            message=f"search_internet: Query {query} failed with {str(e)}",
         ) from e
 
 
-def speak_user(query: str, data: Optional[JSONType] = None) -> None:
+def speak_user(query: str, data: JSONType | None = None) -> None:
     if data is None:
         data = ""
     if not isinstance(query, str) or not isinstance(data, JSONType):
@@ -266,6 +247,7 @@ def speak_user(query: str, data: Optional[JSONType] = None) -> None:
             code=ExceptionCode.ARGUMENT_VALIDATION,
             message="Arguments for speak_user should be strings or JSON objects",
         )
+    assert SESSION.LLM
     response: LLMResponse = SESSION.LLM.invoke(
         [
             LLMMessage(
@@ -286,27 +268,32 @@ def speak_user(query: str, data: Optional[JSONType] = None) -> None:
         SESSION.CAR_STATE.speak.append(response.text)
 
 
-def set_navigation(waypoints: Union[list[str], str]) -> JSONType:
+def set_navigation(waypoints: list[str] | str) -> JSONType:
     if isinstance(waypoints, str):
         try:
             # Might be stringified when stored in memory
             waypoints = json.loads(waypoints)
+            if isinstance(waypoints, str):
+                SESSION.CAR_STATE.destination_waypoints = [waypoints]
+            else:
+                SESSION.CAR_STATE.destination_waypoints = waypoints
         except json.JSONDecodeError:
             # Leave value as it is
-            waypoints = [waypoints]
-    SESSION.CAR_STATE.destination_waypoints = waypoints
+            assert isinstance(waypoints, str), "Cannot decode JSON from list of strings"
+            SESSION.CAR_STATE.destination_waypoints = [waypoints]
     try:
-        return distance_matrix(SESSION.CAR_STATE.current_address, waypoints)
+        return json.dumps(
+            distance_matrix(SESSION.CAR_STATE.current_address, waypoints),
+            ensure_ascii=False,
+        )
     except ValueError as e:
         raise BenchmarkException(
-            tool_name="set_navigation",
-            taxonomy="illegal_value",
-            code=ExceptionCode.ARGUMENT_VALIDATION,
-            message="Unknown origin or destination - are they proper addresses?",
+            code=ExceptionCode.INVALID_ARGUMENT,
+            message="set_navigation: Unknown origin or destination - are they proper addresses?",
         ) from e
 
 
-def add_navigation(waypoints: Union[list[str], str]) -> JSONType:
+def add_navigation(waypoints: list[str] | str) -> JSONType:
     if isinstance(waypoints, str):
         try:
             # Might be stringified when stored in memory
@@ -316,13 +303,14 @@ def add_navigation(waypoints: Union[list[str], str]) -> JSONType:
             waypoints = [waypoints]
     SESSION.CAR_STATE.destination_waypoints.extend(waypoints)
     try:
-        return distance_matrix(SESSION.CAR_STATE.current_address, waypoints)
+        return json.dumps(
+            distance_matrix(SESSION.CAR_STATE.current_address, waypoints),
+            ensure_ascii=False,
+        )
     except ValueError as e:
         raise BenchmarkException(
-            tool_name="set_navigation",
-            taxonomy="illegal_value",
-            code=ExceptionCode.ARGUMENT_VALIDATION,
-            message="Unknown origin or destination - are they proper addresses?",
+            code=ExceptionCode.INVALID_ARGUMENT,
+            message="set_navigation: Unknown origin or destination - are they proper addresses?",
         ) from e
 
 
@@ -332,7 +320,13 @@ def get_car_state() -> JSONType:
 
 @TOOL_CACHE.cache
 def query_to_place(query: str) -> JSONType:
-    return json.dumps(geocode_address(query))
+    try:
+        return json.dumps(geocode_address(query), ensure_ascii=False)
+    except Exception as e:
+        raise BenchmarkException(
+            code=ExceptionCode.INVALID_ARGUMENT,
+            message=f"query_to_place: Could not geocode address {query}",
+        ) from e
 
 
 @retry(
@@ -340,14 +334,20 @@ def query_to_place(query: str) -> JSONType:
     wait=wait_random_exponential(min=1, max=APP_CONFIG.retry_max_seconds),
     stop=stop_after_attempt(5),
 )
-def weather_tool(query: Optional[str] = None):
+def weather_tool(query: str | None = None):
     if query is None:
         lat = SESSION.CAR_STATE.current_coordinates.lat
         lng = SESSION.CAR_STATE.current_coordinates.lng
     else:
-        geocode_response = geocode_address(query)
-        lat = geocode_response["latitude"]
-        lng = geocode_response["longitude"]
+        try:
+            geocode_response = geocode_address(query)
+            lat = geocode_response["latitude"]
+            lng = geocode_response["longitude"]
+        except Exception as e:
+            raise BenchmarkException(
+                code=ExceptionCode.INVALID_ARGUMENT,
+                message="weather_tool: Could not geocode the address",
+            ) from e
 
     timezone = TimezoneFinder().timezone_at(lat=lat, lng=lng)
 
@@ -419,18 +419,18 @@ def weather_tool(query: Optional[str] = None):
             weather_code_mapping.get(code, code)
             for code in report[time_period]["weather_code"]
         ]
-    return json.dumps(report)
+    return json.dumps(report, ensure_ascii=False)
 
 
 def llm_parse_json(
-    query: str, json_object: str, return_type: Literal["object", "string"]
-) -> Union[JSONType, str]:
+    query: str,
+    json_object: str,
+    return_type: Literal["object", "string"],
+) -> JSONType | str:
     if return_type not in ["object", "string"]:
         raise BenchmarkException(
-            tool_name="llm_parse_json",
-            taxonomy="out_of_enum",
             code=ExceptionCode.ARGUMENT_VALIDATION,
-            message="return_type should be one of 'object', 'string' or 'list'",
+            message="llm_parse_json: return_type should be one of 'object', 'string' or 'list'",
         )
     sub_prompt = {
         "object": (
@@ -447,6 +447,7 @@ def llm_parse_json(
         "You are receiving a JSON input and are required to apply an operation to it. "
         + sub_prompt
     )
+    assert SESSION.LLM
     result: LLMResponse = SESSION.LLM.invoke(
         [
             LLMMessage(role="system", content=prompt),
@@ -456,10 +457,8 @@ def llm_parse_json(
     )
     if result.text == "":
         raise BenchmarkException(
-            tool_name="llm_parse_json",
-            taxonomy="illegal_value",
-            code=ExceptionCode.ARGUMENT_VALIDATION,
-            message="Empty LLM response",
+            code=ExceptionCode.INVALID_ARGUMENT,
+            message="llm_parse_json: Empty LLM response",
         )
     output = result.text
 
@@ -478,11 +477,11 @@ def llm_parse_json(
         if isinstance(json_output, list):
             if all(isinstance(item, dict) and len(item) == 1 for item in json_output):
                 output = [list(item.values())[0] for item in json_output]
-        output = json.dumps(output)
+        output = json.dumps(output, ensure_ascii=False)
     except json.JSONDecodeError:
         pass
 
-    return output
+    return json.dumps(output, ensure_ascii=False)
 
 
 @cachetools.func.ttl_cache(ttl=55 * 60)  # 55 minutes
@@ -510,11 +509,9 @@ def media_search(query: str, types: list[SpotifySearch]) -> JSONType:
     if any(tf not in (ss := typing.get_args(SpotifySearch)) for tf in types):
         not_allowed = [wrong_type for wrong_type in types if wrong_type not in ss]
         raise BenchmarkException(
-            tool_name="media_search",
-            taxonomy="out_of_enum",
             code=ExceptionCode.ARGUMENT_VALIDATION,
             message=(
-                f"types parameter values should all be from {ss}, "
+                f"media_search: types parameter values should all be from {ss}, "
                 f"the following are illegal: {not_allowed}"
             ),
         )
@@ -530,6 +527,7 @@ def media_search(query: str, types: list[SpotifySearch]) -> JSONType:
 
 @TOOL_CACHE.cache
 def truthy(query: str) -> bool:
+    assert SESSION.LLM
     response: LLMResponse = SESSION.LLM.invoke(
         [
             LLMMessage(

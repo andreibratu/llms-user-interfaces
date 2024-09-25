@@ -1,23 +1,25 @@
 from datetime import datetime
-from typing import Optional, list, tuple
 
 from overrides import overrides
 
-from src.llm.base import LLMMessage
-from src.plan.domain import PlanStep
-from src.plan.exceptions import MisgeneratedPlanException
+from src.llm import LLMMessage
+from src.plan.domain import GeneratedPlanStep, PlanStep
+from src.plan.exceptions import BenchmarkException, ExceptionCode
 from src.plan.parse import parse_json_llm_plan
-from src.prompts import get_system_prompt
-from src.strategy.generate.generate_strategy import GenerateStrategy
+from src.strategy.generate import GenerateStrategy
 from src.strategy.notification import NewQueryNotification, StrategyNotification
 
 
-class GenerateReact(GenerateStrategy):
-    def __init__(self, timeout_generation: int = 120, **kwargs) -> None:
+class GenerateReactOnline(GenerateStrategy):
+    def __init__(self, timeout_generation: int = 240, **kwargs) -> None:
+        assert "is_online" not in kwargs and "strategy_name" not in kwargs, (
+            "Do not override is_online or strategy_name. They are "
+            "configured in the constructor of each GenerateStrategy."
+        )
         super().__init__(
             **kwargs,
-            strategy_name="GenerateReact",
-            is_online_strategy=True,
+            strategy_name="react",
+            is_online=True,
         )
         self._timer = datetime.now()
         self._timeout_generation = timeout_generation
@@ -30,34 +32,31 @@ class GenerateReact(GenerateStrategy):
             self._generated_plan = []
 
     @overrides
-    def generate(self) -> tuple[list[PlanStep], int]:
+    def generate(self) -> tuple[str, GeneratedPlanStep]:
         self._timer = datetime.now()
-        tokens = self._build_init_messages()
-        step, tokens = self._react_step(tokens)
+        self._build_init_messages()
+        text, step = self._react_step()
         if step is None:
-            return [], tokens
-        return [step], tokens
+            return "", []
+        return text, [step]
 
     @overrides
-    def update(self) -> tuple[list[PlanStep], int]:
-        tokens = 0
+    def update(self) -> tuple[str, GeneratedPlanStep]:
         delta_seconds = (datetime.now() - self._timer).total_seconds()
         if delta_seconds > self._timeout_generation:
             # TODO: remove timeout
-            raise MisgeneratedPlanException(
-                code=39,
+            raise BenchmarkException(
+                code=ExceptionCode.UNEXPECTED,
                 message="Timeout on generation GenerateReact",
-                output=[step.model_dump() for step in self._generated_plan],
-                tokens=tokens,
             )
-        transition_msg = self._build_transition_message()
-        # Making this message Observation in accordance with ReAct framework
+        transition_msg = self._build_transition_messages()
+        # Observation step in accordance with ReACT algorithm
         transition_msg.content = f"Observation: {transition_msg.content}"
         self._llm_chat.append(transition_msg)
-        step, tokens = self._react_step(tokens)
+        text, step = self._react_step()
         if step is None:
-            return [], tokens
-        return [step], tokens
+            return "", []
+        return text, [step]
 
     @classmethod
     def _thought_phase(cls) -> LLMMessage:
@@ -81,32 +80,36 @@ class GenerateReact(GenerateStrategy):
         )
 
     @overrides
-    def _build_system_prompt(self) -> str:
-        prompt = get_system_prompt(self.plan_format)
-        prompt += (
-            "You will generate the plan sovling the query step by step. "
-            "At each step you will generate a Tought where you reason what "
-            "must be done, an Action which represents the tool you will call "
-            "in JSON format. You will be provided an Observation which "
-            "contains the result of the call."
+    def _build_init_messages(self):
+        super()._build_init_messages()
+        self._llm_chat.insert(
+            # Insert message before the one containing the query
+            1,
+            LLMMessage(
+                role="assistant",
+                content=(
+                    "You will generate the plan solving the query step by step. "
+                    "At each step you will generate a Thought where you reason what "
+                    "must be done, an Action which represents the tool you will call "
+                    "in JSON format. You will be provided an Observation which "
+                    "contains the result of the call."
+                ),
+            ),
         )
-        return prompt
 
-    def _react_step(self, tokens) -> tuple[Optional[PlanStep], int]:
+    def _react_step(self) -> tuple[str, PlanStep | None]:
         response = self.planner_llm.invoke(
             [
                 *self._llm_chat,
                 LLMMessage(
                     role="user",
-                    content="Have you finished the query? Respond with YES or NO only.",
+                    content="Have you finished the query? Respond with 'yes' or 'no' only.",
                 ),
             ]
         )
-        tokens += response.tokens
         if "yes" in response.text.lower():
-            return None, tokens
+            return "", None
         response = self.planner_llm.invoke([*self._llm_chat, self._thought_phase()])
-        tokens += response.tokens
         self._llm_chat.append(
             LLMMessage(role="assistant", content="Thought: {response.text}")
         )
@@ -116,12 +119,13 @@ class GenerateReact(GenerateStrategy):
                 self._act_phase(),
             ]
         )
-        tokens += response.tokens
-        step = parse_json_llm_plan(llm_text=response.text, tokens=tokens)[0]
+        self.used_tokens = response.tokens
+        step = parse_json_llm_plan(llm_text=response.text)
+        assert isinstance(step, PlanStep)
         self._llm_chat.append(
             LLMMessage(
                 role="assistant",
                 content=f"Act: Calling tool {step.model_dump_json()}",
             )
         )
-        return step, tokens
+        return response.text, step

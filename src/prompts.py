@@ -1,4 +1,5 @@
-from tool.tools import TOOL_SCHEMA
+from src.llm import LLMMessage
+from src.tool.tools import TOOL_SCHEMA
 
 STATE_SYSTEM_INIT_MSG = (
     "You are an AI assistant managing the state of a car. "
@@ -35,7 +36,7 @@ DEFAULT_LLM_HYPERS = {
 
 
 _BASE_PLAN_PROMPT_SYS = (
-    "You are a car assistant, using tools to satisfy a user query.{tool_schema}"
+    "You are a car assistant, using tools to satisfy a user query. {tool_schema}"
 )
 
 _JSON_LIST_PLAN_SYS = (
@@ -72,7 +73,7 @@ _GML_PLAN_REASON_EDGE_PROMPT_SYS = (
 )
 
 
-def get_system_prompt(plan_mode: str, use_tool_schema: bool = True) -> str:
+def get_system_message(plan_mode: str) -> LLMMessage:
     prompt = {
         "json": _JSON_LIST_PLAN_SYS,
         "json+r": _JSON_LIST_PLAN_W_REASON_SYS,
@@ -80,7 +81,4 @@ def get_system_prompt(plan_mode: str, use_tool_schema: bool = True) -> str:
         "gml+r": _GML_PLAN_REASON_PROMPT_SYS,
         "gml+r+e": _GML_PLAN_REASON_EDGE_PROMPT_SYS,
     }[plan_mode]
-    if use_tool_schema:
-        return prompt.format(tool_schema=TOOL_SCHEMA)
-    else:
-        return prompt.format(tool_schema="")
+    return LLMMessage(role="system", content=prompt.format(tool_schema=TOOL_SCHEMA))
