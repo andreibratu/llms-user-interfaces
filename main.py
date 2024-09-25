@@ -2,7 +2,7 @@ import itertools
 import json
 import random
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Literal
 
 import tqdm
 
@@ -10,6 +10,7 @@ import src.session as SESSION
 from src.car_state import CarState
 from src.configuration import APP_CONFIG
 from src.dataset.benchmark import generate_benchmark_dataset
+from src.domain import FinetunedLLMConfig, PlanFormat
 from src.llm import LLMInterface
 from src.llm.openai import OpenAILLM
 from src.plan.evaluation import LLMPlannerResult
@@ -31,35 +32,76 @@ SESSION.CAR_STATE = CarState.get_default()
 
 random.seed(APP_CONFIG.experiment.random_seed)
 
+
+LLM_CONFIGS: list[FinetunedLLMConfig] = []
+# Get fine-tuned model names
+with open(
+    Path("data", "finetuning", "finetune_jobs.json"), "r", encoding="utf-8"
+) as fp:
+    _FINETUNE_JOBS = json.load(fp)
+    for key, job_config in _FINETUNE_JOBS.items():
+        finetune_strategy, plan_format = key.split("_")
+        LLM_CONFIGS.append(
+            FinetunedLLMConfig(
+                finetune_strategy=finetune_strategy,
+                plan_format=plan_format,
+                model=job_config["fine_tuned_model"],
+            )
+        )
+
+
+LLM_CONFIGS.append(
+    FinetunedLLMConfig(
+        finetune_strategy="none",
+        plan_format=None,
+        model=APP_CONFIG.experiment.openai_model,
+    )
+)
+
+# Use baseline model to generate benchmark dataset
 SESSION.LLM = OpenAILLM(
     model=APP_CONFIG.experiment.openai_model,
     finetuning_strategy="none",
 )
-
 generate_benchmark_dataset(
     generator_llm=SESSION.LLM,
     num_instructions_generate=APP_CONFIG.generation.generate_size,
 )
-
 with open(Path("data", "benchmark", "benchmark.jsonl"), "r", encoding="utf-8") as fp:
     _BENCHMARK_DATASET = random.sample(
         fp.readlines(), APP_CONFIG.experiment.dataset_size
     )
 
-_LLMS = [SESSION.LLM]
 
-_RETRY_STRATEGIES: list[TryManyTimes] = [
+LLMS: list[LLMInterface] = []
+RETRY_STRATEGIES: list[TryManyTimes] = [
     TryManyTimes(retry_time) for retry_time in APP_CONFIG.experiment.retry_times
 ]
-_GENERATE_STRATEGIES: list[GenerateStrategy] = []
+GENERATE_STRATEGIES: list[GenerateStrategy] = []
 
 
-for llm, num_demonstrations, feedback_strategy, plan_format in itertools.product(
-    _LLMS,
+for (
+    llm_config,
+    num_demonstrations,
+    feedback_strategy,
+    plan_format,
+) in itertools.product(
+    LLM_CONFIGS,
     APP_CONFIG.experiment.num_demonstrations,
     APP_CONFIG.experiment.feedback_strategies,
     APP_CONFIG.experiment.plan_formats,
 ):
+    # if llm_finetune_plan_format is None, then it can be used with any plan format
+    finetune_strategy, llm_finetune_plan_format, model_name = llm_config
+    if llm_finetune_plan_format is not None and llm_finetune_plan_format != plan_format:
+        # Skip invalid configuration: LLM finetuned with different plan format
+        continue
+
+    llm = OpenAILLM(
+        model=llm_config.model,
+        finetuning_strategy=llm_config.finetune_strategy,
+    )
+    LLMS.append(llm)
     init_args = {
         "planner_llm": llm,
         "llm_hypers": DEFAULT_LLM_HYPERS,
@@ -68,18 +110,18 @@ for llm, num_demonstrations, feedback_strategy, plan_format in itertools.product
         "plan_format": plan_format,
     }
     if "gml" in plan_format:
-        _GENERATE_STRATEGIES.extend(
+        GENERATE_STRATEGIES.extend(
             [
                 GenerateBlindOffline(**init_args),
                 GenerateCOTOffline(**init_args),
             ]
         )
     else:
-        _GENERATE_STRATEGIES.extend(
+        GENERATE_STRATEGIES.extend(
             [
-                # GenerateBlindOffline(**init_args),
+                GenerateBlindOffline(**init_args),
                 GenerateBlindOnline(**init_args),
-                # GenerateCOTOffline(**init_args),
+                GenerateCOTOffline(**init_args),
                 GenerateCOTOnline(**init_args),
                 GenerateReactOnline(**init_args),
             ]
@@ -88,9 +130,9 @@ for llm, num_demonstrations, feedback_strategy, plan_format in itertools.product
 
 experiment_it: Iterable[tuple[LLMInterface, RetryStrategy, GenerateStrategy]] = (
     itertools.product(
-        _LLMS,
-        _RETRY_STRATEGIES,
-        _GENERATE_STRATEGIES,
+        LLMS,
+        RETRY_STRATEGIES,
+        GENERATE_STRATEGIES,
     )
 )
 configurations = list(experiment_it)

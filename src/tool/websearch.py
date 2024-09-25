@@ -1,3 +1,4 @@
+import re
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
@@ -11,14 +12,14 @@ from sumy.parsers.plaintext import PlaintextParser
 from sumy.summarizers.lsa import LsaSummarizer
 
 from src.configuration import APP_CONFIG
+from src.plan.exceptions import BenchmarkException, ExceptionCode
 
 _OPTIONS = Options()
 _OPTIONS.add_argument("--headless=new")
 _OPTIONS.add_argument("--no-sandbox")
 _OPTIONS.add_argument("--disable-dev-sh-usage")
 _OPTIONS.add_argument("--ignore-certificate-errors")
-_URL_COUNT = 10
-_WORKERS = 10
+_WORKERS = 3
 _TRANSFORMER = Html2TextTransformer()
 
 _SELENIUM_WORKERS: list[webdriver.Chrome] = []
@@ -34,23 +35,35 @@ def _fetch_url(args) -> str | None:
 
 
 def google_search(query: str) -> list[dict]:
-    response = requests.get(
-        "https://www.googleapis.com/customsearch/v1",
-        params={
-            "key": APP_CONFIG.google.custom_search_api_key,
-            "cx": APP_CONFIG.google.custom_search_engine_id,
-            "q": query,
-        },
+    # remove non letter and digit characters
+    query = re.sub(r"[^\w\s]", "", query)
+    attempts = 3
+    while attempts > 0:
+        response = requests.get(
+            "https://www.googleapis.com/customsearch/v1",
+            params={
+                "key": APP_CONFIG.google.custom_search_api_key,
+                "cx": APP_CONFIG.google.custom_search_engine_id,
+                "q": query,
+            },
+        )
+        if "items" in response.json():
+            return response.json()["items"]
+        attempts -= 1
+    raise BenchmarkException(
+        code=ExceptionCode.INVALID_ARGUMENT,
+        message=(
+            f"Google search failed to return results for query: {query}. "
+            "Avoid using special characters."
+        ),
     )
-    return response.json()["items"]
 
 
 def internet_scrape(topic: str) -> str:
-    # pylint: disable=global-statement
     global _SELENIUM_WORKERS
     _SELENIUM_WORKERS = [webdriver.Chrome(options=_OPTIONS) for _ in range(_WORKERS)]
 
-    items = google_search(topic)
+    items = google_search(topic)[:_WORKERS]
     urls = [result["link"] for result in items]
     docs = []
 
@@ -80,7 +93,7 @@ def internet_scrape(topic: str) -> str:
             ]
         )
     ]
-    docs = docs[:_URL_COUNT]
+    docs = docs[:_WORKERS]
 
     # Summarize to not overwhelm the model
     output = []

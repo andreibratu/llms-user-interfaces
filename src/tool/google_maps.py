@@ -1,6 +1,7 @@
 import requests
 
 from src.configuration import APP_CONFIG
+from src.plan.exceptions import BenchmarkException, ExceptionCode
 from src.tool import TOOL_CACHE
 
 
@@ -62,7 +63,6 @@ def get_places(query: str, lat: float, lng: float, radius: int | float) -> list[
     return response.json()["places"]
 
 
-@TOOL_CACHE.cache
 def distance_matrix(
     origins: list[str] | str,
     destinations: list[str] | str,
@@ -98,6 +98,11 @@ def distance_matrix(
     try:
         all_distances = {}
         rows = response.json()["rows"]
+        if len(rows) == 0:
+            raise BenchmarkException(
+                code=ExceptionCode.INVALID_ARGUMENT,
+                message=f"No rows returned by distance_matrix for origins: {origins} and destinations: {destinations}",
+            )
         if isinstance(origins, str):
             origins = [origins]
         if isinstance(destinations, str):

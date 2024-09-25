@@ -1,4 +1,4 @@
-# llm-multi-intent
+# llms-user-interfaces
 
 **Master Thesis: Large Language Models as User Interfaces: Alignment on Well-Defined Problems**
 
@@ -13,8 +13,12 @@
 
 # Reproducing Results
 
-`conda env create -f environment.yml`
+- `conda env create -f environment.yml`
 
-`python configure.py`
+- Add the API KEYS in the `env` file and rename it to .env
 
-`python main.py`
+- `python configure.py`
+
+- `python finetune.py`
+
+- `python main.py`

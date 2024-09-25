@@ -1,9 +1,9 @@
 import difflib
 import json
-from math import floor
 import string
 from collections import Counter
 from functools import cached_property
+from math import floor
 from statistics import mean
 from typing import Any, ClassVar, Literal, Optional
 

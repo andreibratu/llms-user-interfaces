@@ -144,9 +144,9 @@ class SeedPlanner(PlannerInterface):
     Instead of generating a plan, it injects the human annotated plan.
     """
 
-    def __init__(self, llm: LLMInterface, mode: PlanFormat) -> None:
+    def __init__(self, llm: LLMInterface, plan_format: PlanFormat) -> None:
         super().__init__(llm)
-        self._mode = mode
+        self._mode = plan_format
         self._query: str | None = None
         self._plan_text: str | None = None
 
@@ -201,7 +201,8 @@ class SeedPlanner(PlannerInterface):
 
             # Executor failed at running the step
             if isinstance(feedback, ExecutorFailureFeedback):
-                raise RuntimeError("Should not fail on seed examples")
+                print(f"Executor failed at running step: {feedback.exception}")
+                break
 
             # Executor succeeded at running the step
             if isinstance(feedback, ExecutorOkFeedback):

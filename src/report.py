@@ -2,11 +2,11 @@ import json
 from pathlib import Path
 
 import pandas as pd
+from pydantic import TypeAdapter
 
+from src.car_state import CarState
 from src.plan.domain import PlanStep
 from src.plan.evaluation import LLMPlannerResult
-from src.car_state import CarState
-from pydantic import TypeAdapter
 
 
 def _insert_attempts(planner_eval: LLMPlannerResult):

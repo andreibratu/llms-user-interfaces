@@ -83,21 +83,20 @@ class SpotifyConfig(BaseSettings):
 class ExperimentConfig(BaseSettings):
     repeat_experiments: int = 1
     wire_producers: list[bool] = [False, True]
-    num_demonstrations: list[int] = [10]
+    num_demonstrations: list[int] = [1, 5, 10]
     feedback_strategies: "list[LLMErrorFeedbackStrategyType]" = [
         "NO_FEEDBACK",
         "ERROR_TYPE",
         "ERROR_TYPE+STEP",
     ]
     retry_times: list[int] = [1, 3]
-    dataset_size: int = 5
+    dataset_size: int = 100
     openai_model: str = "gpt-4o-mini-2024-07-18"
     finetune_tool_bert_percentage: float = 1
     finetune_tool_bert_fill_tool_count: int | None = None
     random_seed: int = 42
     max_tool_slice_size: int = 3
-    # plan_formats: list[PlanFormat] = ["gml", "json", "json+r", "gml+r"]
-    plan_formats: list[PlanFormat] = ["json"]
+    plan_formats: list[PlanFormat] = ["json", "gml"]
     alignment_skip_list: list[str] = [
         "home_address",
         "current_address",

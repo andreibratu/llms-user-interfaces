@@ -24,11 +24,11 @@ class LLMMessage(BaseModel):
 
 
 class LLMInterface:
-    finetuning_strategy: Literal["none", "baseline", "toolbert"]
+    finetuning_strategy: Literal["none", "baseline", "tool_bert"]
 
     def __init__(
         self,
-        finetuning_strategy: Literal["none", "baseline", "toolbert"],
+        finetuning_strategy: Literal["none", "baseline", "tool_bert"],
     ) -> None:
         self.finetuning_strategy = finetuning_strategy
 

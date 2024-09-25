@@ -26,3 +26,9 @@ class Coordinates(BaseModel):
 
     def __hash__(self) -> int:
         return hash((self.lat, self.lng)) + hash(str(type(self)))
+
+
+class FinetunedLLMConfig(BaseModel):
+    finetune_strategy: Literal["none", "tool_bert", "baseline"]
+    plan_format: PlanFormat | None
+    model: str

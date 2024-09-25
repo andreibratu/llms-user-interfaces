@@ -20,7 +20,7 @@ from src.plan.exceptions import BenchmarkException, ExceptionCode
 
 class OpenAILLM(LLMInterface):
     def __init__(
-        self, model: str, finetuning_strategy: Literal["none", "baseline", "toolbert"]
+        self, model: str, finetuning_strategy: Literal["none", "baseline", "tool_bert"]
     ) -> None:
         super().__init__(finetuning_strategy=finetuning_strategy)
         self._client = OpenAI(api_key=APP_CONFIG.openai.api_key)

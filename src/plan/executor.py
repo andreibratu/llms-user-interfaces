@@ -18,7 +18,7 @@ from src.plan.feedback import (
     ExecutorRunBranch,
     ExecutorSkipBranch,
 )
-from src.plan.planner import LLMPlanner
+from src.plan.planner import PlannerInterface
 from src.tool import tools
 
 
@@ -59,6 +59,9 @@ def replace_slots_with_memory(
                 # Do not encode strings, it will add extra quotes
                 recall_val = str(recall_val)
             val_with_slots = val_with_slots.replace(f"${mt}$", recall_val)
+            if val_with_slots[0] == '"' and val_with_slots[-1] == '"':
+                # Remove quotes if present it messes up the json parsing
+                val_with_slots = val_with_slots[1:-1]
         return val_with_slots
 
     if not fn_args:
@@ -82,6 +85,8 @@ def replace_slots_with_memory(
             for sub_value in arg_value:
                 try:
                     vals = json.loads(sub_value)
+                    if isinstance(vals, str):
+                        new_value.append(vals)
                     if isinstance(vals, list):
                         new_value = [*new_value, *vals]
                     if isinstance(vals, dict):
@@ -95,7 +100,7 @@ def replace_slots_with_memory(
     return fn_args
 
 
-def solve_query(query: str, planner: LLMPlanner) -> None:
+def solve_query(query: str, planner: PlannerInterface) -> None:
     """Given a user query, attempt to solve it using the planner."""
     plan_iterator = planner.make_plan(query)
     finished = False  # False until planner is done with query or gives up
