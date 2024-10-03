@@ -1,3 +1,3 @@
-identifier,plan_format,num_demonstrations,error_feedback_strategy,finetuning_strategy,is_online_strategy,generation_strategy_name,retry_strategy_name,retry_times,success_rate,mean_tokens,mean_execution_time,mean_alignment_all,mean_alignment_success,mean_alignment_failed,mean_plan_size
-99895aed0193e64e4a275a1f71368c7ef30dccf9_0,json,10,NO_FEEDBACK,none,False,cot,try_many_times,1,0.4,0.0,8347,0.9223815122146977,0.3653946175919277,0.55698689462277,1.375
-3c6daa8a38290d3efb9f892675df99c047f4d933_0,json,10,ERROR_TYPE,none,False,cot,try_many_times,1,0.4,0.0,9422,0.867957547642249,0.30932827377938993,0.5586292738628591,1.75
+version https://git-lfs.github.com/spec/v1
+oid sha256:e063020ad86324675dd58eba895960bd9db147dea8d11558560b1bc898b02b25
+size 11691
