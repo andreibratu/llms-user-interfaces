@@ -13,25 +13,28 @@ from tenacity import (
 )
 
 from src.configuration import APP_CONFIG
-from src.domain import Metadata
+from src.domain import PlanFormat
 from src.llm import LLMInterface, LLMMessage, LLMResponse
 from src.plan.exceptions import BenchmarkException, ExceptionCode
 
 
 class OpenAILLM(LLMInterface):
     def __init__(
-        self, model: str, finetuning_strategy: Literal["none", "baseline", "tool_bert"]
+        self,
+        model: str,
+        finetune_strategy: Literal["none", "baseline", "tool_bert"],
+        finetune_format: PlanFormat | None,
     ) -> None:
-        super().__init__(finetuning_strategy=finetuning_strategy)
+        super().__init__(
+            finetune_strategy=finetune_strategy,
+            finetune_format=finetune_format,
+        )
         self._client = OpenAI(api_key=APP_CONFIG.openai.api_key)
         self._model = model
 
     @property
     def name(self) -> str:
         return self._model
-
-    def metadata(self) -> Metadata:
-        return {"model": self._model, "type": "openai"}
 
     @retry(
         retry=retry_if_not_exception_type(BenchmarkException),

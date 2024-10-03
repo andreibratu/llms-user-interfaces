@@ -1,10 +1,10 @@
 import json
 
 from overrides import overrides
-from pydantic import TypeAdapter
 
 from src.llm import LLMMessage
 from src.plan.domain import GeneratedPlanStep, PlanStep
+from src.plan.exceptions import MisgeneratedPlanException
 from src.plan.parse import parse_gml_llm_plan, parse_json_llm_plan
 from src.strategy.generate import GenerateStrategy
 
@@ -61,10 +61,7 @@ class GenerateBlindOffline(GenerateStrategy):
 
 
 class GenerateBlindOnline(GenerateStrategy):
-    _FIRST_STEP_PROMPT = (
-        "Generate first step of the plan as JSON"
-        f"object. Use JSON schema:\n{PlanStep.model_json_schema()}\n"
-    )
+    _FIRST_STEP_PROMPT = "Generate first step of the plan as JSON object. Use JSON."
 
     def __init__(self, **kwargs) -> None:
         assert "is_online" not in kwargs and "strategy_name" not in kwargs, (
@@ -91,17 +88,23 @@ class GenerateBlindOnline(GenerateStrategy):
         )
         # Update here in case parsing fails
         self._used_tokens = response.tokens
-        plan: GeneratedPlanStep = parse_json_llm_plan(response.text)
+        step: PlanStep | list[PlanStep] = parse_json_llm_plan(response.text)[0]
+        if isinstance(step, list):
+            raise MisgeneratedPlanException(
+                message="Online strategies cannot generate conditionals",
+                output=response.text,
+            )
+
         self._llm_chat.append(
             LLMMessage(
                 role="assistant",
                 content=json.dumps(
-                    TypeAdapter(GeneratedPlanStep).dump_python(plan),
+                    step.model_dump(),
                     ensure_ascii=False,
                 ),
             )
         )
-        return response.text, plan
+        return response.text, [step]
 
     @overrides
     def update(self) -> tuple[str, GeneratedPlanStep]:
@@ -129,21 +132,25 @@ class GenerateBlindOnline(GenerateStrategy):
                 LLMMessage(
                     role="user",
                     content=(
-                        "Output the next step of the plan as JSON. "
-                        f"Use the JSON schema:\n{PlanStep.model_json_schema()}"
+                        "Output the next step of the plan as JSON. Output only one step ahead"
                     ),
                 )
             ]
         )
         response = self.planner_llm.invoke(self._llm_chat, **self._llm_hypers)
-        next_step = parse_json_llm_plan(response.text)
+        next_step = parse_json_llm_plan(response.text)[0]
+        if isinstance(next_step, list):
+            raise MisgeneratedPlanException(
+                message="Online strategies cannot generate conditionals",
+                output=response.text,
+            )
         self._llm_chat.append(
             LLMMessage(
                 role="assistant",
                 content=json.dumps(
-                    TypeAdapter(GeneratedPlanStep).dump_python(next_step),
+                    next_step.model_dump(),
                     ensure_ascii=False,
                 ),
             )
         )
-        return response.text, next_step
+        return response.text, [next_step]

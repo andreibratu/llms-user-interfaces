@@ -4,7 +4,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, field_validator
 
-from src.domain import Metadata
+from src.domain import Metadata, PlanFormat
 
 
 class LLMResponse(BaseModel):
@@ -28,9 +28,11 @@ class LLMInterface:
 
     def __init__(
         self,
-        finetuning_strategy: Literal["none", "baseline", "tool_bert"],
+        finetune_strategy: Literal["none", "baseline", "tool_bert"],
+        finetune_format: PlanFormat | None,
     ) -> None:
-        self.finetuning_strategy = finetuning_strategy
+        self.finetuning_strategy = finetune_strategy
+        self.finetune_format = finetune_format
 
     def invoke(
         self,

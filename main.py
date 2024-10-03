@@ -1,8 +1,8 @@
 import itertools
 import json
 import random
+import typing
 from pathlib import Path
-from typing import Iterable, Literal
 
 import tqdm
 
@@ -10,7 +10,7 @@ import src.session as SESSION
 from src.car_state import CarState
 from src.configuration import APP_CONFIG
 from src.dataset.benchmark import generate_benchmark_dataset
-from src.domain import FinetunedLLMConfig, PlanFormat
+from src.domain import PlanFormat
 from src.llm import LLMInterface
 from src.llm.openai import OpenAILLM
 from src.plan.evaluation import LLMPlannerResult
@@ -25,7 +25,7 @@ from src.strategy.generate.generate_blind import (
 )
 from src.strategy.generate.generate_cot import GenerateCOTOffline, GenerateCOTOnline
 from src.strategy.generate.generate_react import GenerateReactOnline
-from src.strategy.retry import RetryStrategy, TryManyTimes
+from src.strategy.retry import TryManyTimes
 
 SESSION.CAR_STATE = CarState.get_default()
 
@@ -33,132 +33,129 @@ SESSION.CAR_STATE = CarState.get_default()
 random.seed(APP_CONFIG.experiment.random_seed)
 
 
-LLM_CONFIGS: list[FinetunedLLMConfig] = []
+LLMS: list[LLMInterface] = [
+    # Baseline, no fine-tuning
+    OpenAILLM(
+        finetune_strategy="none",
+        finetune_format=None,
+        model=APP_CONFIG.experiment.openai_model,
+    )
+]
 # Get fine-tuned model names
 with open(
     Path("data", "finetuning", "finetune_jobs.json"), "r", encoding="utf-8"
 ) as fp:
-    _FINETUNE_JOBS = json.load(fp)
+    _FINETUNE_JOBS: dict[str, dict] = json.load(fp)
     for key, job_config in _FINETUNE_JOBS.items():
-        finetune_strategy, plan_format = key.split("_")
-        LLM_CONFIGS.append(
-            FinetunedLLMConfig(
-                finetune_strategy=finetune_strategy,
-                plan_format=plan_format,
+        finetune_strategy, plan_format = key.rsplit("_", 1)
+        assert finetune_strategy in typing.get_args(
+            typing.Literal["none", "tool_bert", "baseline"]
+        )
+        assert plan_format in typing.get_args(PlanFormat)
+        LLMS.append(
+            OpenAILLM(
+                finetune_strategy=finetune_strategy,  # pyright: ignore [reportArgumentType]
+                finetune_format=plan_format,  # pyright: ignore [reportArgumentType]
                 model=job_config["fine_tuned_model"],
             )
         )
 
-
-LLM_CONFIGS.append(
-    FinetunedLLMConfig(
-        finetune_strategy="none",
-        plan_format=None,
-        model=APP_CONFIG.experiment.openai_model,
-    )
-)
-
 # Use baseline model to generate benchmark dataset
 SESSION.LLM = OpenAILLM(
     model=APP_CONFIG.experiment.openai_model,
-    finetuning_strategy="none",
+    finetune_strategy="none",
+    finetune_format=None,
 )
 generate_benchmark_dataset(
     generator_llm=SESSION.LLM,
     num_instructions_generate=APP_CONFIG.generation.generate_size,
 )
 with open(Path("data", "benchmark", "benchmark.jsonl"), "r", encoding="utf-8") as fp:
-    _BENCHMARK_DATASET = random.sample(
-        fp.readlines(), APP_CONFIG.experiment.dataset_size
-    )
+    EVALUATION_QUERIES = fp.readlines()
 
-
-LLMS: list[LLMInterface] = []
-RETRY_STRATEGIES: list[TryManyTimes] = [
-    TryManyTimes(retry_time) for retry_time in APP_CONFIG.experiment.retry_times
-]
+# Build configurations to be evaluated
 GENERATE_STRATEGIES: list[GenerateStrategy] = []
-
-
 for (
-    llm_config,
-    num_demonstrations,
-    feedback_strategy,
+    llm,
     plan_format,
 ) in itertools.product(
-    LLM_CONFIGS,
-    APP_CONFIG.experiment.num_demonstrations,
-    APP_CONFIG.experiment.feedback_strategies,
+    LLMS,
     APP_CONFIG.experiment.plan_formats,
 ):
-    # if llm_finetune_plan_format is None, then it can be used with any plan format
-    finetune_strategy, llm_finetune_plan_format, model_name = llm_config
-    if llm_finetune_plan_format is not None and llm_finetune_plan_format != plan_format:
+    # if llm_config.plan_format is None, then it can be used with any plan format
+    # It is a non-finetuned model
+    if llm.finetune_format is not None and llm.finetune_format != plan_format:
         # Skip invalid configuration: LLM finetuned with different plan format
         continue
 
-    llm = OpenAILLM(
-        model=llm_config.model,
-        finetuning_strategy=llm_config.finetune_strategy,
-    )
-    LLMS.append(llm)
-    init_args = {
-        "planner_llm": llm,
-        "llm_hypers": DEFAULT_LLM_HYPERS,
-        "err_feedback_strategy": feedback_strategy,
-        "num_demonstrations": num_demonstrations,
-        "plan_format": plan_format,
-    }
-    if "gml" in plan_format:
-        GENERATE_STRATEGIES.extend(
-            [
-                GenerateBlindOffline(**init_args),
-                GenerateCOTOffline(**init_args),
-            ]
+    # Sample points from num_demonstrations domain so we can avoid exhaustive
+    # grid evaluation
+    num_demonstrations = [
+        random.randint(
+            APP_CONFIG.experiment.num_demonstrations[0],
+            APP_CONFIG.experiment.num_demonstrations[1],
         )
-    else:
-        GENERATE_STRATEGIES.extend(
-            [
-                GenerateBlindOffline(**init_args),
-                GenerateBlindOnline(**init_args),
-                GenerateCOTOffline(**init_args),
-                GenerateCOTOnline(**init_args),
-                GenerateReactOnline(**init_args),
-            ]
-        )
+        for _ in range(APP_CONFIG.experiment.num_demonstrations_picks)
+    ]
+
+    for num_d in num_demonstrations:
+        strategy_args = {
+            "planner_llm": llm,
+            "llm_hypers": DEFAULT_LLM_HYPERS,
+            "err_feedback_strategy": random.choice(
+                APP_CONFIG.experiment.feedback_strategies
+            ),
+            "num_demonstrations": num_d,
+            "plan_format": plan_format,
+        }
+        if "gml" in plan_format:
+            GENERATE_STRATEGIES.extend(
+                [
+                    GenerateBlindOffline(**strategy_args),
+                    GenerateCOTOffline(**strategy_args),
+                ]
+            )
+        else:
+            GENERATE_STRATEGIES.extend(
+                [
+                    GenerateBlindOffline(**strategy_args),
+                    GenerateBlindOnline(**strategy_args),
+                    GenerateCOTOffline(**strategy_args),
+                    GenerateCOTOnline(**strategy_args),
+                    GenerateReactOnline(**strategy_args),
+                ]
+            )
 
 
-experiment_it: Iterable[tuple[LLMInterface, RetryStrategy, GenerateStrategy]] = (
-    itertools.product(
-        LLMS,
-        RETRY_STRATEGIES,
-        GENERATE_STRATEGIES,
+for gs in (epb := tqdm.tqdm(iterable=GENERATE_STRATEGIES[8:])):
+    # Select random retry strategy between 1 and 3
+    rs = TryManyTimes(
+        random.randint(
+            APP_CONFIG.experiment.retry_times[0], APP_CONFIG.experiment.retry_times[1]
+        )
     )
-)
-configurations = list(experiment_it)
-for llm, rs, gs in (
-    epb := tqdm.tqdm(
-        iterable=configurations,
-        total=len(configurations),
-    )
-):
-    SESSION.LLM = llm
+    # Distinct LLM attached at earlier loop for each generation strategy
+    SESSION.LLM = gs.planner_llm
     planner = LLMPlanner(
         retry_strategy=rs,
         generation_strategy=gs,
-        llm=llm,
+        llm=gs.planner_llm,
     )
-    if gs.strategy_name != "cot":
-        continue
-    for repeat_idx in range(APP_CONFIG.experiment.repeat_experiments):
+    # Get fresh batches for each configuration - evaluating the grid
+    _EVALUATION_BATCHES = [
+        random.sample(EVALUATION_QUERIES, APP_CONFIG.experiment.batch_size)
+        for _ in range(APP_CONFIG.experiment.batch_picks)
+    ]
+    for batch_idx, batch in enumerate(_EVALUATION_BATCHES):
         query_evaluations: list[QueryEvaluation] = []
-        trial_id = f"{planner.identifier}_{repeat_idx}"
+        trial_id = f"{planner.identifier}_{batch_idx}"
+        # TODO: planner_evaluated is less useful when doing sampling over the hyperparameter grid
         if planner_evaluated(trial_id):
             epb.write(f"Planner {trial_id} already evaluated")
             epb.update(1)
             continue
 
-        for query_line in (pb := tqdm.tqdm(_BENCHMARK_DATASET, desc="Dataset")):
+        for query_line in (pb := tqdm.tqdm(batch, desc=f"Dataset_{batch_idx}")):
             query_text = json.loads(query_line)["instruction"]
             solve_query(query_text, planner)
             query_evaluations.append(planner.evaluation.model_copy())
@@ -169,7 +166,7 @@ for llm, rs, gs in (
                 plan_format=gs.plan_format,
                 num_demonstrations=gs.num_demonstrations,
                 error_feedback_strategy=gs.error_feedback_strategy,
-                finetuning_strategy=llm.finetuning_strategy,
+                finetune_strategy=gs.planner_llm.finetuning_strategy,
                 is_online_strategy=gs.is_online_strategy,
                 generation_strategy_name=gs.strategy_name,
                 retry_strategy_name=rs.strategy_name,

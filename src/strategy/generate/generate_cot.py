@@ -1,10 +1,10 @@
 import json
 
 from overrides import overrides
-from pydantic import TypeAdapter
 
 from src.llm import LLMMessage
-from src.plan.domain import GeneratedPlanStep, PlanStep
+from src.plan.domain import GeneratedPlanStep
+from src.plan.exceptions import MisgeneratedPlanException
 from src.plan.parse import parse_gml_llm_plan, parse_json_llm_plan
 from src.strategy.generate import GenerateStrategy
 
@@ -110,7 +110,10 @@ class GenerateCOTOnline(GenerateStrategy):
         self._llm_chat.append(
             LLMMessage(
                 role="user",
-                content=("Translate the first step of the plan in a JSON tool call"),
+                content=(
+                    "Translate the first step of the plan in a JSON "
+                    "tool call. Output only one step ahead."
+                ),
             )
         )
         response = self.planner_llm.invoke(
@@ -150,21 +153,26 @@ class GenerateCOTOnline(GenerateStrategy):
                 LLMMessage(
                     role="user",
                     content=(
-                        "Output the next step of the JSON execution plan in teh same format provided in the examples"
+                        "Output the next step of the plan as JSON. Output only one step ahead"
                     ),
                 )
             ]
         )
         response = self.planner_llm.invoke(self._llm_chat, **self._llm_hypers)
 
-        next_step = parse_json_llm_plan(response.text)
+        next_step = parse_json_llm_plan(response.text)[0]
+        if isinstance(next_step, list):
+            raise MisgeneratedPlanException(
+                message="Online strategies cannot generate conditionals",
+                output=response.text,
+            )
         self._llm_chat.append(
             LLMMessage(
                 role="assistant",
                 content=json.dumps(
-                    TypeAdapter(GeneratedPlanStep).dump_python(next_step),
+                    next_step.model_dump(),
                     ensure_ascii=False,
                 ),
             )
         )
-        return response.text, next_step
+        return response.text, [next_step]

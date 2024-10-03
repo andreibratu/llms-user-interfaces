@@ -19,8 +19,9 @@ _PARSER = JsonOutputParser()
 def llm_text_to_json(llm_text: str) -> list[dict] | dict | None:
     """Extracted structured JSON output from LLM generation."""
     json_text = llm_text.replace("'", '"').replace("\n'", "")
+    json_text = json_text.replace("\\", "")
     try:
-        # Try to discard text around the JSON output of interest
+        # Try to discard text around the JSON output of interest, extracting inner objects
         matches = regex.compile(r"\{(?:[^{}]|(?R))*\}").findall(json_text)
         if len(matches) == 1:
             return _PARSER.parse(matches[0])
@@ -41,13 +42,16 @@ def parse_json_llm_plan(llm_text: str) -> GeneratedPlanStep:
         # A single step has been generated
         if isinstance(parsed_json, dict):
             parsed_json = [parsed_json]
-        if len(parsed_json) == 0:
+        if len(parsed_json) == 0 or any(step is None for step in parsed_json):
             raise OutputParserException(error=f"Could not parse JSON out of {llm_text}")
         plan: GeneratedPlanStep = []
         for json_step in parsed_json:
             if "condition" in json_step:
                 # Expecting conditional branch
-                step = [PlanStep.model_validate(tool) for tool in json_step["tools"]]
+
+                step = [
+                    PlanStep.model_validate(tool) for tool in json_step.get("tools", [])
+                ]
                 step[0].evaluate_condition = json_step["condition"]
                 step[0].raw_plan_text = json.dumps(json_step, ensure_ascii=False)
                 if len(json_step) == 0:
@@ -62,21 +66,21 @@ def parse_json_llm_plan(llm_text: str) -> GeneratedPlanStep:
         return plan
     except OutputParserException as e:
         raise MisgeneratedPlanException(
-            message="Could not parse JSON out of text",
+            message=f"Could not parse JSON out of text: {llm_text}",
             output=llm_text,
         ) from e
     except ValidationError as e:
         raise MisgeneratedPlanException(
             message=(
-                "Output object does not satisfy schema. It must be a "
-                f"list of objects that match JSON schema:\n{PlanStep.model_json_schema()}\n"
+                "Output cannot be parsed as JSON. "
                 "Make sure the object is not nested and \"\" are used, not ''"
+                f"Failing LLM output: {llm_text}"
             ),
             output=llm_text,
         ) from e
     except ValueError as e:
         raise MisgeneratedPlanException(
-            message="Could not find a json in text",
+            message=f"Could not find a json in text: {llm_text}",
             output=llm_text,
         ) from e
 
@@ -104,6 +108,9 @@ def _gml_to_nx_graph(llm_text: str) -> nx.Graph:
     glm_text = glm_text.replace("]]", "]")
     glm_text = glm_text.replace("[[", "[")
     glm_text = glm_text.replace("\n", "")
+    glm_text = glm_text.replace('"]', "")
+    glm_text = glm_text.replace('["', "")
+    glm_text = glm_text.replace("\\", "")
     # Replace all matches of more than one whitespace with a single space
     glm_text = regex.sub(r"\s{2,}", " ", glm_text)
     try:

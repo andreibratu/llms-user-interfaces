@@ -19,7 +19,11 @@ def evaluate_seed_datasets():
     The function saves the query evaluations, such as car states and
     memory information, to a file.
     """
-    LLM = OpenAILLM(APP_CONFIG.experiment.openai_model, finetuning_strategy="none")
+    LLM = OpenAILLM(
+        APP_CONFIG.experiment.openai_model,
+        finetune_strategy="none",
+        finetune_format=None,
+    )
     SESSION.LLM = LLM
 
     for plan_format in APP_CONFIG.experiment.plan_formats:

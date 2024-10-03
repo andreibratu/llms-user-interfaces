@@ -60,7 +60,13 @@ def get_places(query: str, lat: float, lng: float, radius: int | float) -> list[
             },
         },
     )
-    return response.json()["places"]
+    try:
+        return response.json()["places"]
+    except Exception as e:
+        raise BenchmarkException(
+            code=ExceptionCode.INVALID_ARGUMENT,
+            message=f"Could not find places for query: {query} and location: {lat}, {lng}",
+        ) from e
 
 
 def distance_matrix(

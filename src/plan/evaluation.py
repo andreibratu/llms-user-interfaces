@@ -145,7 +145,7 @@ class LLMPlannerResult(BaseModel):
     error_feedback_strategy: str
     is_online_strategy: bool
     plan_format: str
-    finetuning_strategy: str
+    finetune_strategy: str
     generation_strategy_name: str
     retry_strategy_name: str
     retry_times: int

@@ -6,8 +6,8 @@ from src.domain import LLMErrorFeedbackStrategyType, PlanFormat
 class CarStatus(BaseSettings):
     longitude: float = 11.639028
     latitude: float = 48.251638
-    current_address: str = "Parkring 19 85748 Garching bei München"
-    home_address: str = "Schröfelhofstraße 20, 81375 München"
+    current_address: str = "Parkring 19 85748 Garching bei Munchen"
+    home_address: str = "Schrofelhofstrasse 20, 81375 München"
 
 
 class OpenAIConfig(BaseSettings):
@@ -81,22 +81,23 @@ class SpotifyConfig(BaseSettings):
 
 
 class ExperimentConfig(BaseSettings):
-    repeat_experiments: int = 1
-    wire_producers: list[bool] = [False, True]
-    num_demonstrations: list[int] = [1, 5, 10]
+    num_demonstrations: tuple[int, int] = (3, 10)
+    num_demonstrations_picks: int = 3
     feedback_strategies: "list[LLMErrorFeedbackStrategyType]" = [
         "NO_FEEDBACK",
         "ERROR_TYPE",
         "ERROR_TYPE+STEP",
     ]
-    retry_times: list[int] = [1, 3]
-    dataset_size: int = 100
+    retry_times: tuple[int, int] = (1, 5)
+    batch_size: int = 30
+    batch_picks: int = 1
     openai_model: str = "gpt-4o-mini-2024-07-18"
     finetune_tool_bert_percentage: float = 1
     finetune_tool_bert_fill_tool_count: int | None = None
     random_seed: int = 42
     max_tool_slice_size: int = 3
-    plan_formats: list[PlanFormat] = ["json", "gml"]
+    # plan_formats: list[PlanFormat] = ["json", "gml"]
+    plan_formats: list[PlanFormat] = ["gml"]
     alignment_skip_list: list[str] = [
         "home_address",
         "current_address",

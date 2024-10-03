@@ -4,7 +4,11 @@ from overrides import overrides
 
 from src.llm import LLMMessage
 from src.plan.domain import GeneratedPlanStep, PlanStep
-from src.plan.exceptions import BenchmarkException, ExceptionCode
+from src.plan.exceptions import (
+    BenchmarkException,
+    ExceptionCode,
+    MisgeneratedPlanException,
+)
 from src.plan.parse import parse_json_llm_plan
 from src.strategy.generate import GenerateStrategy
 from src.strategy.notification import NewQueryNotification, StrategyNotification
@@ -74,8 +78,8 @@ class GenerateReactOnline(GenerateStrategy):
             role="user",
             content=(
                 "You are in act phase. Generate a JSON to call one of "
-                "the tools to move towards solving the query. Use "
-                f"the JSON schema:\n{PlanStep.model_json_schema()}"
+                "the tools to move towards solving the query. "
+                "Output the next step of the plan as JSON. Output only one step ahead"
             ),
         )
 
@@ -120,8 +124,12 @@ class GenerateReactOnline(GenerateStrategy):
             ]
         )
         self.used_tokens = response.tokens
-        step = parse_json_llm_plan(llm_text=response.text)
-        assert isinstance(step, PlanStep)
+        step = parse_json_llm_plan(llm_text=response.text)[0]
+        if isinstance(step, list):
+            raise MisgeneratedPlanException(
+                message="Online strategies cannot generate conditionals",
+                output=response.text,
+            )
         self._llm_chat.append(
             LLMMessage(
                 role="assistant",

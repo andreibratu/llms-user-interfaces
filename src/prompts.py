@@ -39,12 +39,10 @@ _BASE_PLAN_PROMPT_SYS = (
     "You are a car assistant, using tools to satisfy a user query. {tool_schema}"
 )
 
-_JSON_LIST_PLAN_SYS = (
-    _BASE_PLAN_PROMPT_SYS
-    + " Tool calls are represented as JSON objects. Results stored "
-    "in memory can be called using the pattern $NAME_OF_MEMORY$ anywhere "
-    "in other function arguments and the stored value will be used "
-    "instead of the placeholder. "
+_JSON_LIST_PLAN_SYS = _BASE_PLAN_PROMPT_SYS + (
+    " You must output an execution plan using tools above to satisfy user query in JSON format. "
+    "Results stored in memory can be called using the pattern $NAME_OF_MEMORY$ anywhere "
+    "in other function arguments and the stored value will be used instead of the placeholder."
 )
 
 _JSON_LIST_PLAN_W_REASON_SYS = (

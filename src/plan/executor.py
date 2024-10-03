@@ -72,12 +72,9 @@ def replace_slots_with_memory(
         if not isinstance(arg_value, (dict, list, str)):
             continue
         if isinstance(arg_value, dict):
-            arg_value_serialized = json.dumps(arg_value, ensure_ascii=False)
-            arg_value_replaced = _replace_memory_reference(arg_value_serialized)
-            # Remove quotes if present it messes up the json parsing
-            if '""' in arg_value_replaced:
-                arg_value_replaced = arg_value_replaced.replace('""', '"')
-            arg_value = json.loads(arg_value_replaced)
+            for k, v in arg_value.items():
+                if isinstance(v, str):
+                    arg_value[k] = _replace_memory_reference(v)
         elif isinstance(arg_value, list):
             arg_value = [_replace_memory_reference(val) for val in arg_value]
             new_value = []
@@ -203,7 +200,7 @@ def solve_query(query: str, planner: PlannerInterface) -> None:
                 # Forward the tool call fail to the planner
                 planner.post_feedback(ExecutorFailureFeedback(exception=e))
                 continue
-            except TypeError as e:
+            except (TypeError, ValueError) as e:
                 # Tool signature mismatch
                 planner.post_feedback(
                     ExecutorFailureFeedback(

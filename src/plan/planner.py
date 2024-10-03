@@ -18,7 +18,7 @@ from src.plan.domain import (
     PlanSuccessExecutorNotification,
 )
 from src.plan.evaluation import QueryAttempt, QueryEvaluation
-from src.plan.exceptions import MisgeneratedPlanException
+from src.plan.exceptions import BenchmarkException, MisgeneratedPlanException
 from src.plan.feedback import (
     ExecutorFailureFeedback,
     ExecutorFeedback,
@@ -388,7 +388,7 @@ class LLMPlanner(PlannerInterface):
                         [step for step in plan_extension if isinstance(step, PlanStep)]
                     )
                     current_attempt.raw_llm_text.append(raw_llm_text)
-                except MisgeneratedPlanException as err:
+                except (MisgeneratedPlanException, BenchmarkException) as err:
                     current_attempt.error = err
                     attempts.append(current_attempt.model_copy())
                     self._notify_strategies(ExceptionNotification(exception=err))
